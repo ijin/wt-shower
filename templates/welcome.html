@@ -1,0 +1,52 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Wrongtown</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/static/bootstrap.min.css" rel="stylesheet" >
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    <!-- Custom styles for this template -->
+    <link href="/static/login.css" rel="stylesheet">
+  </head>
+<body>
+
+  <div class="container">
+    <div class="row justify-content-md-center">
+    <div class="alert alert-success" role="alert">
+      <h4 class="alert-heading">Welcome!</h4>
+      <p>Choose your shower credits</>
+      <hr>
+      <p class="mb-0">You have {{credits}} credits of shower time left for this week</p>
+
+    </div>
+    </div>
+  </div>
+  <div class="text-center">
+    <form action="/instructions" method="POST">
+    <button type="submit" class="btn btn-primary btn-lg" name="credit" value=1>1 credit (90 seconds)</button>
+    <button type="submit" class="btn btn-primary btn-lg" name="credit" value=2>2 credits (180 seconds)</button>
+    </form>
+  </div>
+
+</body>
+</html>
+

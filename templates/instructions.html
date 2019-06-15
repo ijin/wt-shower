@@ -1,0 +1,52 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Wrongtown</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/static/bootstrap.min.css" rel="stylesheet" >
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+    <!-- Custom styles for this template -->
+    <link href="/static/login.css" rel="stylesheet">
+  </head>
+<body>
+
+  <div class="container">
+    <div class="row justify-content-md-center">
+    <div class="alert alert-success" role="alert">
+      <h4 class="alert-heading">Welcome!</h4>
+      <p>Use shower A. You have {{ seconds }} seconds of shower time. Enjoy!</p>
+      <hr>
+      <p class="mb-0">Remaining credits: {{ credits }}</p>
+    </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row justify-content-md-center">
+      <form action="/logout" method="POST">
+        <button class="btn btn-info btn-lg">Back to home</button>
+      </form>
+    </div>
+  </div>
+
+</body>
+</html>
+
