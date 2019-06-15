@@ -1,34 +1,5 @@
-
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Wrongtown</title>
-
-    <!-- Bootstrap core CSS -->
-    <link href="/static/bootstrap.min.css" rel="stylesheet" >
-
-    <style>
-      .bd-placeholder-img {
-        font-size: 1.125rem;
-        text-anchor: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-      }
-
-      @media (min-width: 768px) {
-        .bd-placeholder-img-lg {
-          font-size: 3.5rem;
-        }
-      }
-    </style>
-    <!-- Custom styles for this template -->
-    <link href="/static/login.css" rel="stylesheet">
-  </head>
-<body>
-
+{% extends "base.html" %}
+{% block content %}
   <div class="container">
     <div class="row justify-content-md-center">
     <div class="alert alert-success" role="alert">
@@ -46,7 +17,5 @@
     <button type="submit" class="btn btn-primary btn-lg" name="credit" value=2>2 credits (180 seconds)</button>
     </form>
   </div>
-
-</body>
-</html>
+{% endblock %}
 

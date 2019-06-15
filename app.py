@@ -14,7 +14,7 @@ def shutdown_session(exception=None):
 def index():
     #return render_template('boot.html')
     #return render_template('bootstrap.html')
-    return render_template('base.html')
+    return render_template('login.html')
 
 @app.route('/login', methods = ['POST', 'GET'])
 def login():
