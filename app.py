@@ -34,7 +34,7 @@ def login():
 @app.route('/selection', methods = ['GET'])
 def selection():
     u = User.query.get(session['id'])
-    return render_template('selection.html', credits=u.credits)
+    return render_template('selection.html', credits=u.credits, name=u.name)
 
 @app.route('/instructions', methods = ['POST', 'GET'])
 def instructions():
@@ -52,4 +52,4 @@ def logout():
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
