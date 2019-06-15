@@ -12,8 +12,6 @@ def shutdown_session(exception=None):
 
 @app.route('/')
 def index():
-    #return render_template('boot.html')
-    #return render_template('bootstrap.html')
     return render_template('login.html')
 
 @app.route('/login', methods = ['POST', 'GET'])
@@ -25,18 +23,18 @@ def login():
         if u:
             session['id'] = u.id
             flash('You were successfully logged in')
-            return redirect(url_for('welcome'))
+            return redirect(url_for('selection'))
         else:
             flash('Wrong credentials!')
             return redirect(url_for('index'))
     else:
-        return "Result: {}".format("bbb")
+        return redirect(url_for('index'))
 
 
-@app.route('/welcome', methods = ['GET'])
-def welcome():
+@app.route('/selection', methods = ['GET'])
+def selection():
     u = User.query.get(session['id'])
-    return render_template('welcome.html', credits=u.credits)
+    return render_template('selection.html', credits=u.credits)
 
 @app.route('/instructions', methods = ['POST', 'GET'])
 def instructions():
