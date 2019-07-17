@@ -2,9 +2,36 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from database import db_session
 from models import User
+from celery import Celery
+from celery.schedules import crontab
+
+import os
+import platform
+import pyttsx3
+import redis
 
 app = Flask(__name__)
 app.secret_key = 'random string'
+app.config.update(
+    CELERY_BROKER_URL='redis://localhost:6379',
+    CELERY_RESULT_BACKEND='redis://localhost:6379',
+
+)
+
+CELERYBEAT_SCHEDULE = {
+    'run-every-second': {
+        'task': 'tasks.periodic',
+        'schedule': 1.0
+    },
+}
+
+celery = Celery(
+    app.name,
+    broker=app.config['CELERY_BROKER_URL'],
+    backend=app.config['CELERY_RESULT_BACKEND'],
+)
+redis  = redis.Redis('localhost')
+engine = pyttsx3.init()
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -41,8 +68,10 @@ def instructions():
     credit = request.form['credit']
     seconds = int(credit)*90
     u = User.query.get(session['id'])
+    n = User.query.get(session['name'])
     u.credits -= int(credit)
     db_session.commit()
+    escort_user(n)
     return render_template('instructions.html', seconds=seconds, credits=u.credits)
 
 @app.route('/logout', methods = ['POST'])
@@ -51,5 +80,50 @@ def logout():
     flash('Welcome back')
     return redirect(url_for('index'))
 
+
+@app.route('/test', methods = ['GET'])
+def test():
+    result = add_together.delay(23, 42)
+    result.wait() 
+    name = 'test'
+    #escort_user(name)
+    s = "Hello, " + name
+    return s, 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+
+# Celery tasks
+
+@celery.on_after_configure.connect
+def setup_periodic_tasks(sender, **kwargs):
+    sender.add_periodic_task(5.0, incr.s(), name='increment')
+    #sender.add_periodic_task(1.0, periodic.s('hello'), name='add every second')
+
+@celery.task
+def add_together(a,b):
+    return a + b
+
+@celery.task
+def periodic(txt):
+    return txt
+
+@celery.task
+def incr():
+    return txt
+
+# Normal functions
+
+def escort_user(user):
+    text = "Hello, " + user
+    if platform.system() == 'Darwin':
+        os.system("say " + text)
+    else:
+        engine.say("Hello, " + user)
+        engine.runAndWait()
+        engine.stop()
+
+
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
+
+

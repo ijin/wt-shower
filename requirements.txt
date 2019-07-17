@@ -1,4 +1,6 @@
 flask-bootstrap
 #bootstrap-flask
 flask-sqlalchemy
-
+pyttsx3
+redis
+celery
