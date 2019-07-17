@@ -18,13 +18,6 @@ app.config.update(
 
 )
 
-CELERYBEAT_SCHEDULE = {
-    'run-every-second': {
-        'task': 'tasks.periodic',
-        'schedule': 1.0
-    },
-}
-
 celery = Celery(
     app.name,
     broker=app.config['CELERY_BROKER_URL'],
