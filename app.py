@@ -23,7 +23,7 @@ celery = Celery(
     broker=app.config['CELERY_BROKER_URL'],
     backend=app.config['CELERY_RESULT_BACKEND'],
 )
-redis  = redis.Redis('localhost')
+redis  = redis.Redis()
 engine = pyttsx3.init()
 
 @app.teardown_appcontext
@@ -88,7 +88,7 @@ def test():
 
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    sender.add_periodic_task(5.0, incr.s(), name='increment')
+    sender.add_periodic_task(1.0, incr.s(), name='increment')
     #sender.add_periodic_task(1.0, periodic.s('hello'), name='add every second')
 
 @celery.task
@@ -101,9 +101,20 @@ def periodic(txt):
 
 @celery.task
 def incr():
-    return txt
+    showers = running_showers()
+    for k,v in enumerate(showers):
+        if v:
+            shower = 'shower_time_sum:' + str(k+1)
+            accumulated_shower_time = redis.incr(shower)
+            print(shower)
+            print(accumulated_shower_time)
+#    return
+  
 
 # Normal functions
+
+def running_showers():
+    return redis.mget('shower1', 'shower2')
 
 def escort_user(user):
     text = "Hello, " + user

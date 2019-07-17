@@ -4,3 +4,4 @@ flask-sqlalchemy
 pyttsx3
 redis
 celery
+#gpiozero
