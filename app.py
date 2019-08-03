@@ -61,10 +61,10 @@ def instructions():
     credit = request.form['credit']
     seconds = int(credit)*90
     u = User.query.get(session['id'])
-    n = User.query.get(session['name'])
+    n = u.name
     u.credits -= int(credit)
     db_session.commit()
-    escort_user(n)
+    escort_user.delay(n)
     return render_template('instructions.html', seconds=seconds, credits=u.credits)
 
 @app.route('/logout', methods = ['POST'])
@@ -79,7 +79,7 @@ def test():
     result = add_together.delay(23, 42)
     result.wait() 
     name = 'test'
-    #escort_user(name)
+    escort_user.delay(name)
     s = "Hello, " + name
     return s, 200, {'Content-Type': 'text/html; charset=utf-8'}
 
@@ -116,6 +116,7 @@ def incr():
 def running_showers():
     return redis.mget('shower1', 'shower2')
 
+@celery.task
 def escort_user(user):
     text = "Hello, " + user
     if platform.system() == 'Darwin':
@@ -124,6 +125,7 @@ def escort_user(user):
         engine.say("Hello, " + user)
         engine.runAndWait()
         engine.stop()
+    return
 
 
 
