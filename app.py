@@ -1,5 +1,6 @@
 # coding: utf-8
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask_api import status 
 from database import db_session
 from models import User
 from celery import Celery
@@ -9,6 +10,7 @@ import os
 import platform
 import pyttsx3
 import redis
+import json
 
 app = Flask(__name__)
 app.secret_key = 'random string'
@@ -84,6 +86,36 @@ def test():
     return s, 200, {'Content-Type': 'text/html; charset=utf-8'}
 
 
+# API
+@app.route('/api/toggle', methods = ['POST'])
+def toggle():
+    try:
+        j = request.get_json()
+        shower = j['shower']
+        result = {
+            "shower": {
+                "id": shower,
+                "status": "on"
+            }
+        }
+        return jsonify(result)
+    except Exception as e:
+        result = error_handler(e)
+        return result, status.HTTP_500_INTERNAL_SERVER_ERROR
+
+def error_handler(error):
+    exception_type = error.__class__.__name__
+    exception_message = str(error)
+    result_error = { 
+        "error": { 
+        "type": exception_type, 
+        "message": exception_message 
+        }
+    }
+    return jsonify(result_error)
+
+
+
 # Celery tasks
 
 @celery.on_after_configure.connect
@@ -100,6 +132,7 @@ def periodic(txt):
     return txt
 
 @celery.task
+# check_shower
 def incr():
     showers = running_showers()
     for k,v in enumerate(showers):
@@ -111,10 +144,6 @@ def incr():
 #    return
   
 
-# Normal functions
-
-def running_showers():
-    return redis.mget('shower1', 'shower2')
 
 @celery.task
 def escort_user(user):
@@ -127,6 +156,10 @@ def escort_user(user):
         engine.stop()
     return
 
+# Normal functions
+
+def running_showers():
+    return redis.mget('shower1', 'shower2')
 
 
 if __name__ == '__main__':
