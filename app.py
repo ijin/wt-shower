@@ -149,7 +149,7 @@ def periodic(txt):
 def incr():
     showers = running_showers()
     for k,v in enumerate(showers):
-        if int(v) == 1:
+        if int(v or 0) == 1:
             shower = 'shower_time_sum:' + str(k+1)
             accumulated_shower_time = redis.incr(shower)
             print(shower)
