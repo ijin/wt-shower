@@ -2,9 +2,10 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_api import status 
 from database import db_session
-from models import User
+from models import User#, Shower
 from celery import Celery
 from celery.schedules import crontab
+from datetime import datetime
 
 import os
 import platform
@@ -71,10 +72,14 @@ def instructions():
     credit = request.form['credit']
     seconds = int(credit)*90
     u = User.query.get(session['id'])
-    n = u.name
     u.credits -= int(credit)
+    #db_session.add(u)
+    #db_session.commit()
+    #print('----')
+    #Shower.query.filter_by(id=1).update(dict(assigned=True,started_at=None,paused_at=None,seconds_allocated=seconds))
+    #print('====')
     db_session.commit()
-    escort_user.delay(n)
+    escort_user.delay(u.name)
     return render_template('instructions.html', seconds=seconds, credits=u.credits)
 
 @app.route('/logout', methods = ['POST'])
