@@ -124,5 +124,8 @@ Session.vim
 tags
 
 app.db
+celerybeat-schedule.db
 
 *.pid
+
+
