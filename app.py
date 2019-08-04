@@ -11,11 +11,11 @@ import platform
 import pyttsx3
 import redis
 import json
-#import RPi.GPIO as GPIO
-#
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(11, GPIO.OUT)
-#GPIO.setup(12, GPIO.OUT)
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(11, GPIO.OUT)
+GPIO.setup(12, GPIO.OUT)
 
 
 SHOWER_PIN_MAP = { 1:11, 2:12}
@@ -102,7 +102,7 @@ def toggle():
         shower_id = j['shower']
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
-        #GPIO.output(shower_pin(shower_id), toggle_status)
+        GPIO.output(shower_pin(shower_id), toggle_status)
         redis.set(f"shower{shower_id}", int(toggle_status))
         print(f"shower id: {shower_id}, status: {toggle_status}")
         result = {
