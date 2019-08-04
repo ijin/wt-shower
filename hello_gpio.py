@@ -49,13 +49,13 @@ def my_callback1(channnel):
     #output= not GPIO.input(11)
     #GPIO.output(11,output)
     print("button 1 switched")
-    shower_status()
+    #shower_status()
     toggle_shower(1)
 def my_callback2(channnel):
     #output= not GPIO.input(12)
     #GPIO.output(12,output)
     print("button 2 switched")
-    shower_status()
+    #shower_status()
     toggle_shower(2)
 
 cb1 = ButtonHandler(2, my_callback1, edge='both', bouncetime=200)

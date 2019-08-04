@@ -76,7 +76,7 @@ def instructions():
     db_session.commit()
     escort_user.delay(n)
     return render_template('instructions.html', seconds=seconds, credits=u.credits)
-
+u
 @app.route('/logout', methods = ['POST'])
 def logout():
     session.clear()
@@ -169,7 +169,7 @@ def escort_user(user):
         engine.stop()
     return
 
-# Normal functions
+# Helper functions
 
 def running_showers():
     return redis.mget('shower1', 'shower2')
