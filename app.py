@@ -8,6 +8,7 @@ from celery.schedules import crontab
 from datetime import datetime
 
 import os
+import random
 import platform
 import pyttsx3
 import redis
@@ -69,14 +70,39 @@ def selection():
 
 @app.route('/instructions', methods = ['POST', 'GET'])
 def instructions():
-    credit = request.form['credit']
-    seconds = int(credit)*90
-    u = User.query.get(session['id'])
-    u.credits -= int(credit)
-    s = db_session.query(Shower).filter_by(id=1).update(dict(assigned=True,started_at=None,paused_at=None,seconds_allocated=seconds))
+    credits = request.form['credit']
+    user = User.query.get(session['id'])
+    shower = available_shower()
+
+    if not shower:
+        return render_template('unavailable.html')
+    #if not credits_available:
+    #    return render_template('no_credits.html')
+    else:
+        assign_shower(shower, user, credits)
+        escort_user.delay(user.name)
+        seconds = int(credits)*90
+        return render_template('instructions.html', seconds=seconds, credits=user.credits)
+
+# TODO: OOP
+def available_shower():
+    showers = Shower.query.filter_by(assigned=False).all()
+    count = len(showers)
+    if count == 0:
+        return None
+    else:
+        index = random.randint(0, count-1)
+        print(f"shower{index+1} available")
+        return showers[index]
+    
+# TODO: OOP
+def assign_shower(shower, user, credits):
+    seconds = int(credits)*90
+    user.credits -= int(credits)
+    shower.assigned = True
+    shower.seeconds_allocated = seconds
     db_session.commit()
-    escort_user.delay(u.name)
-    return render_template('instructions.html', seconds=seconds, credits=u.credits)
+    return shower
 
 @app.route('/logout', methods = ['POST'])
 def logout():
@@ -162,6 +188,7 @@ def incr():
 @celery.task
 def escort_user(user):
     text = "Hello, " + user
+    print(text)
     if platform.system() == 'Darwin':
         os.system("say " + text)
     else:

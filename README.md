@@ -17,7 +17,7 @@ python create_db.py
 INSERT INTO users VALUES(1,'test','test@test.com','test',70);
 INSERT INTO users VALUES(2,'aaa',NULL,NULL,18);
 INSERT INTO showers VALUES(1,1,NULL,NULL,90);
-INSERT INTO showers VALUES(2,NULL,NULL,NULL,NULL);
+INSERT INTO showers VALUES(2,0,NULL,NULL,NULL);
 ```
 
 # Run
