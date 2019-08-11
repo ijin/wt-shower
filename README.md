@@ -2,7 +2,7 @@
 
 # System Requirements
 
-`apt install espeak redis-server sqlite3 virtualenv`
+`apt install espeak redis-server sqlite3 virtualenv espeak-ng`
 
 ```
 virtualenv -p python3 .venv

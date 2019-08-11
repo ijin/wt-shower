@@ -10,7 +10,6 @@ from datetime import datetime
 import os
 import random
 import platform
-import pyttsx3
 import redis
 import json
 import RPi.GPIO as GPIO
@@ -36,7 +35,6 @@ celery = Celery(
     backend=app.config['CELERY_RESULT_BACKEND'],
 )
 redis  = redis.Redis()
-engine = pyttsx3.init()
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -80,9 +78,9 @@ def instructions():
     #    return render_template('no_credits.html')
     else:
         assign_shower(shower, user, credits)
-        escort_user.delay(user.name)
         seconds = int(credits)*90
-        return render_template('instructions.html', seconds=seconds, credits=user.credits)
+        escort_user.delay(user.name, shower.id, seconds)
+        return render_template('instructions.html', seconds=seconds, credits=user.credits, shower=shower.id)
 
 # TODO: OOP
 def available_shower():
@@ -116,7 +114,7 @@ def test():
     result = add_together.delay(23, 42)
     result.wait() 
     name = 'test'
-    escort_user.delay(name)
+    escort_user.delay(name, 50, 100)
     s = "Hello, " + name
     return s, 200, {'Content-Type': 'text/html; charset=utf-8'}
 
@@ -129,7 +127,7 @@ def toggle():
         shower_id = j['shower']
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
-        GPIO.output(shower_pin(shower_id), toggle_status)
+        GPIO.output(shower_pin(shower_id), not toggle_status) # 1 == off
         redis.set(f"shower{shower_id}", int(toggle_status))
         print(f"shower id: {shower_id}, status: {toggle_status}")
         result = {
@@ -142,6 +140,28 @@ def toggle():
     except Exception as e:
         result = error_handler(e)
         return result, status.HTTP_500_INTERNAL_SERVER_ERROR
+
+# test
+@app.route('/api/shower_off/<shower_id>', methods = ['GET'])
+def shower_off(shower_id):
+    try:
+        #j = request.get_json()
+        #shower_id = j['shower']
+        GPIO.output(shower_pin(int(shower_id)), 1)
+        redis.set(f"shower{shower_id}", 0)
+        return "off"
+    except Exception as e:
+        result = error_handler(e)
+        return result, status.HTTP_500_INTERNAL_SERVER_ERROR
+
+@app.route('/api/shower_clear/<shower_id>', methods = ['GET'])
+def shower_clear(shower_id):
+    db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned=False,started_at=None,paused_at=None,seconds_allocated=None))
+    db_session.commit()
+    GPIO.output(shower_pin(int(shower_id)), 1)
+    redis.set(f"shower{shower_id}", 0)
+    redis.set(f"shower_time_sum:{shower_id}", 0)
+    return f"cleared shower{shower_id}"
 
 def error_handler(error):
     exception_type = error.__class__.__name__
@@ -173,6 +193,7 @@ def periodic(txt):
 
 @celery.task
 # check_shower
+# TODO: warn if stopped (logfile?)
 def incr():
     showers = running_showers()
     for k,v in enumerate(showers):
@@ -186,16 +207,13 @@ def incr():
 
 
 @celery.task
-def escort_user(user):
-    text = "Hello, " + user
+def escort_user(user, shower, seconds):
+    text = f"Hello, {user}. Welcome to the Wrongtown Shower System! Please use shower {shower}. You have {seconds} seconds of shower time. Enjoy! Shower {shower}, shower {shower}, shower {shower}"
     print(text)
     if platform.system() == 'Darwin':
         os.system("say " + text)
     else:
-        engine.say("Hello, " + user)
-        engine.runAndWait()
-        engine.stop()
-    return
+        os.system(f"espeak-ng '{text}' --stdout | aplay")
 
 # Helper functions
 

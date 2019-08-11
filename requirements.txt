@@ -2,7 +2,6 @@ flask-bootstrap
 #bootstrap-flask
 flask-sqlalchemy
 flask-api
-pyttsx3
 redis
 celery
 #gpiozero
