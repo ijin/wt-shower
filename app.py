@@ -20,6 +20,7 @@ GPIO.setup(12, GPIO.OUT)
 
 
 SHOWER_PIN_MAP = { 1:11, 2:12}
+PAUSE_TIME_UNTIL_RESET = 30
 
 app = Flask(__name__)
 app.secret_key = 'random string'
@@ -79,7 +80,7 @@ def instructions():
     else:
         assign_shower(shower, user, credits)
         seconds = int(credits)*90
-        escort_user.delay(user.name, shower.id, seconds)
+        escort_user(user.name, shower.id, seconds)
         return render_template('instructions.html', seconds=seconds, credits=user.credits, shower=shower.id)
 
 # TODO: OOP
@@ -116,7 +117,7 @@ def test():
     result = add_together.delay(23, 42)
     result.wait() 
     name = 'test'
-    escort_user.delay(name, 50, 100)
+    escort_user(name, 50, 100)
     s = "Hello, " + name
     return s, 200, {'Content-Type': 'text/html; charset=utf-8'}
 
@@ -179,11 +180,7 @@ def shower_off(shower_id):
 
 @app.route('/api/shower_clear/<shower_id>', methods = ['GET'])
 def shower_clear(shower_id):
-    db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned=False,started_at=None,paused_at=None,seconds_allocated=None))
-    db_session.commit()
-    GPIO.output(shower_pin(int(shower_id)), 1)
-    redis.set(f"shower{shower_id}", 0)
-    redis.set(f"shower_time_sum:{shower_id}", 0)
+    shower_shutdown(shower_id)
     return f"cleared shower{shower_id}"
 
 def error_handler(error):
@@ -221,24 +218,57 @@ def incr():
     showers = running_showers()
     for k,v in enumerate(showers):
         if int(v or 0) == 1:
-            shower = 'shower_time_sum:' + str(k+1)
+            shower_id = k+1
+            shower = f"shower_time_sum:{shower_id}"
             accumulated_shower_time = redis.incr(shower)
-            print(shower)
-            print(accumulated_shower_time)
-#    return
-  
+            print(f"Shower {shower_id}: total time used: {accumulated_shower_time}")
+            s = Shower.query.filter_by(id=shower_id).first()
+            time_left = s.seconds_allocated - accumulated_shower_time 
+            print(f"time_left: {time_left}")
+            if time_left == 30:
+                text = "30 seconds left.."
+                print(text)
+                say.delay(text)
+            elif time_left <= 0:
+                text = "TIMES UP......"
+                print(text)
+                say(text)
+                shower_shutdown(shower_id)
+        else:
+            shower_id = k+1
+            s = Shower.query.filter_by(id=shower_id).first()
+            if (not s.paused_at == None) and s.assigned == True:
+                elapsed_pause = (datetime.now() - s.paused_at).total_seconds()
+                print (f"Shower {shower_id}")
+                print (f"Elapsed time since last pause: {elapsed_pause}")
+                if elapsed_pause > PAUSE_TIME_UNTIL_RESET:
+                    text = f"Shower {shower_id} paused for too long..."
+                    say(text)
+                    shower_shutdown(shower_id)
+
+def shower_shutdown(shower_id):
+    db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned=False,started_at=None,paused_at=None,seconds_allocated=None))
+    db_session.commit()
+    GPIO.output(shower_pin(int(shower_id)), 1)
+    redis.set(f"shower{shower_id}", 0)
+    redis.set(f"shower_time_sum:{shower_id}", 0)
+    text = f"Shutting down shower {shower_id}"
+    print(text)
+    say.delay(text)
 
 
-@celery.task
 def escort_user(user, shower, seconds):
     text = f"Hello, {user}. Welcome to the Wrongtown Shower System! Please use shower {shower}. You have {seconds} seconds of shower time. Enjoy! Shower {shower}, shower {shower}, shower {shower}"
     print(text)
+    say.delay(text)
+
+# Helper functions
+@celery.task
+def say(text):
     if platform.system() == 'Darwin':
         os.system("say " + text)
     else:
         os.system(f"espeak-ng '{text}' --stdout | aplay")
-
-# Helper functions
 
 def running_showers():
     return redis.mget('shower1', 'shower2')

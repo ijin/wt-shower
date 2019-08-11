@@ -10,7 +10,7 @@ GPIO.setup(3, GPIO.IN)
 #GPIO.setup(11, GPIO.OUT)
 #GPIO.setup(12, GPIO.OUT)
 
-URL='http://localhost:5000/api/toggle'
+URL='http://localhost:5000/api/shower_toggle'
 
 class ButtonHandler(threading.Thread):
     def __init__(self, pin, func, edge='both', bouncetime=200):
@@ -65,9 +65,8 @@ cb2.start
 
 
 def toggle_shower(pin):
-    j = json.dumps({'shower':pin})
-    r = requests.post(URL, j, headers={'Content-Type': 'application/json'})
-    print(r.json())
+    r = requests.get(f"{URL}/{pin}")
+    print(r.text)
 
 def shower_status():
     shower1_button = GPIO.input(2)

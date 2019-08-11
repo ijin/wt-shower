@@ -28,7 +28,7 @@ class Shower(Base):
     paused_at = Column(DATETIME)
     seconds_allocated = Column(Integer)
 
-    def __init__(self, id=None, status=False, assigned=False, paused_at=None, seconds_allocated=0):
+    def __init__(self, id=None, status=False, assigned=False, started_at=None, paused_at=None, seconds_allocated=0):
         self.id = id
         #self.status = status
         self.assigned = assigned
