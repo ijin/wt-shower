@@ -98,8 +98,10 @@ def assign_shower(shower, user, credits):
     seconds = int(credits)*90
     user.credits -= int(credits)
     shower.assigned = True
-    shower.seeconds_allocated = seconds
+    shower.seconds_allocated = seconds
     db_session.commit()
+    redis.set(f"shower{shower.id}", 0)
+    redis.set(f"shower_time_sum:{shower.id}", 0)
     return shower
 
 @app.route('/logout', methods = ['POST'])
@@ -140,6 +142,27 @@ def toggle():
     except Exception as e:
         result = error_handler(e)
         return result, status.HTTP_500_INTERNAL_SERVER_ERROR
+
+@app.route('/api/shower_toggle/<shower_id>')
+def shower_toggle(shower_id):
+    shower = Shower.query.filter_by(id=shower_id, assigned=True).first()
+    if shower == None:
+        r  = f"shower{shower_id} NOT ASSIGNED"
+        return r
+    else:
+        # TODO: DRY
+        shower_status = int(redis.get(f"shower{shower_id}") or 0)
+        toggle_status = not bool(shower_status)
+        GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
+        redis.set(f"shower{shower_id}", int(toggle_status))
+        if int(toggle_status) == 1 and shower.started_at == None: # first shower
+            shower.started_at = datetime.now()
+            db_session.commit()
+        elif int(toggle_status) == 0: # pause
+            shower.paused_at = datetime.now()
+            db_session.commit()
+        return f"shower{shower_id}, status:{toggle_status}"
+
 
 # test
 @app.route('/api/shower_off/<shower_id>', methods = ['GET'])
