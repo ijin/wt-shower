@@ -5,7 +5,7 @@
 `apt install espeak redis-server sqlite3 virtualenv espeak-ng`
 
 ```
-virtualenv -p python3 .venv
+virtualenv -p python3.7 .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 python create_db.py
@@ -45,3 +45,10 @@ install emulator
 
 `pip install git+https://github.com/nosix/raspberry-gpio-emulator/`
 
+
+# Debug
+
+```
+watch -n1 gpio readall
+watch -n1 "sqlite3 -header app.db 'select * from showers' "
+```
