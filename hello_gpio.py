@@ -58,8 +58,8 @@ def my_callback2(channnel):
     #shower_status()
     toggle_shower(2)
 
-cb1 = ButtonHandler(2, my_callback1, edge='both', bouncetime=200)
-cb2 = ButtonHandler(3, my_callback2, edge='both', bouncetime=200)
+cb1 = ButtonHandler(2, my_callback1, edge='both', bouncetime=500)
+cb2 = ButtonHandler(3, my_callback2, edge='both', bouncetime=500)
 cb1.start
 cb2.start
 

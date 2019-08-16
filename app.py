@@ -13,14 +13,16 @@ import platform
 import redis
 import json
 import RPi.GPIO as GPIO
+import piplates.RELAYplate as RELAY
 
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(11, GPIO.OUT)
-GPIO.setup(12, GPIO.OUT)
+#GPIO.setmode(GPIO.BCM)
+#GPIO.setup(11, GPIO.OUT)
+#GPIO.setup(12, GPIO.OUT)
 
 
 SHOWER_PIN_MAP = { 1:11, 2:12}
 PAUSE_TIME_UNTIL_RESET = 30
+PAUSE_TIME_WARNING = PAUSE_TIME_UNTIL_RESET - 15
 
 app = Flask(__name__)
 app.secret_key = 'random string'
@@ -130,7 +132,8 @@ def toggle():
         shower_id = j['shower']
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
-        GPIO.output(shower_pin(shower_id), not toggle_status) # 1 == off
+        #GPIO.output(shower_pin(shower_id), not toggle_status) # 1 == off
+        RELAY.relayTOGGLE(3,int(shower_id))
         redis.set(f"shower{shower_id}", int(toggle_status))
         print(f"shower id: {shower_id}, status: {toggle_status}")
         result = {
@@ -154,7 +157,8 @@ def shower_toggle(shower_id):
         # TODO: DRY
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
-        GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
+        #GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
+        RELAY.relayTOGGLE(3,int(shower_id))
         redis.set(f"shower{shower_id}", int(toggle_status))
         if int(toggle_status) == 1 and shower.started_at == None: # first shower
             shower.started_at = datetime.now()
@@ -171,7 +175,8 @@ def shower_off(shower_id):
     try:
         #j = request.get_json()
         #shower_id = j['shower']
-        GPIO.output(shower_pin(int(shower_id)), 1)
+        #GPIO.output(shower_pin(int(shower_id)), 1)
+        RELAY.relayOFF(3,int(shower_id))
         redis.set(f"shower{shower_id}", 0)
         return "off"
     except Exception as e:
@@ -234,6 +239,7 @@ def incr():
                 print(text)
                 say(text)
                 shower_shutdown(shower_id)
+                break
         else:
             shower_id = k+1
             s = Shower.query.filter_by(id=shower_id).first()
@@ -245,11 +251,16 @@ def incr():
                     text = f"Shower {shower_id} paused for too long..."
                     say(text)
                     shower_shutdown(shower_id)
+                    break
+                if elapsed_pause > PAUSE_TIME_WARNING:
+                    text = f"Shower {shower_id} paused for a while. Shutting down unless it's resumed"
+                    say.delay(text)
 
 def shower_shutdown(shower_id):
     db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned=False,started_at=None,paused_at=None,seconds_allocated=None))
     db_session.commit()
-    GPIO.output(shower_pin(int(shower_id)), 1)
+    #GPIO.output(shower_pin(int(shower_id)), 1)
+    RELAY.relayOFF(3,int(shower_id))
     redis.set(f"shower{shower_id}", 0)
     redis.set(f"shower_time_sum:{shower_id}", 0)
     text = f"Shutting down shower {shower_id}"

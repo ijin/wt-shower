@@ -7,3 +7,6 @@ celery
 #gpiozero
 requests
 rpi.gpio
+pi-plates
+#spidev
+#six
