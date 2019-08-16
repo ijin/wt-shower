@@ -36,7 +36,7 @@ celery -A app.celery beat -l info
 swtich control
 
 ```
-python hello_gpio.py
+python hello_gpio2.py
 ```
 
 # Mac Development
