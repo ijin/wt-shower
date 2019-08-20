@@ -15,7 +15,7 @@ var numpad = {
     // ATTACH THE NUMBER DISPLAY
     numpad.display = document.createElement("input");
     numpad.display.id = "numpad-display";
-    numpad.display.type = "text";
+    numpad.display.type = "password";
     numpad.display.readOnly = true;
     wrap.appendChild(numpad.display);
 
