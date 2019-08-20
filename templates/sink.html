@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="container">
+    <div class="row justify-content-md-center">
+    <div class="alert alert-success" role="alert">
+      <h4 class="alert-heading"> Yay!</h4>
+      <p>The kitchen sink will run for 10 minutes</>
+    </div>
+    </div>
+  </div>
+  <br />
+  <div class="container">
+    <div class="row justify-content-md-center">
+      <form action="/logout" method="POST">
+        <button class="btn btn-info btn-lg">Back to home</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+

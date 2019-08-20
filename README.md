@@ -14,8 +14,9 @@ python create_db.py
 # Seed data
 
 ```
-INSERT INTO users VALUES(1,'test','test@test.com','test',70);
-INSERT INTO users VALUES(2,'aaa',NULL,NULL,18);
+INSERT INTO users VALUES(1,'test','1234',99, 0);
+INSERT INTO users VALUES(2,'chef','1111',99, 1);
+INSERT INTO users VALUES(3,'aaa','222',99, 0);
 INSERT INTO showers VALUES(1,0,NULL,NULL,90);
 INSERT INTO showers VALUES(2,1,NULL,NULL,NULL);
 ```

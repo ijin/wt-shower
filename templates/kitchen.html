@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="container">
+    <div class="row justify-content-md-center">
+    <div class="alert alert-success" role="alert">
+      <h4 class="alert-heading">Welcome, {{name}}!</h4>
+      <p>You are authorized to turn on the kitchen sink</>
+    </div>
+    </div>
+  </div>
+  <div class="text-center">
+    <form action="/sink" method="POST">
+    <button type="submit" class="btn btn-primary btn-lg" name="kitchen" value=1>RUN WATER</button>
+    </form>
+  </div>
+  <br />
+  <div class="container">
+    <div class="row justify-content-md-center">
+      <form action="/logout" method="POST">
+        <button class="btn btn-info btn-lg">Back to home</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
