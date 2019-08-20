@@ -45,24 +45,45 @@ def shutdown_session(exception=None):
 
 @app.route('/')
 def index():
-    return render_template('login.html')
+    u = User.query.with_entities(User.name).order_by(User.name).all()
+    return render_template('login.html', users=u)
 
 @app.route('/login', methods = ['POST', 'GET'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']
+        name = request.form['name']
         password = request.form['password']
-        u = User.query.filter(User.email == email, User.password == password).first()
+        u = User.query.filter(User.name == name, User.password == password).first()
         if u:
             session['id'] = u.id
             flash('You were successfully logged in')
-            return redirect(url_for('selection'))
+            if u.chef:
+                return redirect(url_for('kitchen'))
+            else:
+                return redirect(url_for('selection'))
         else:
             flash('Wrong credentials!')
             return redirect(url_for('index'))
     else:
         return redirect(url_for('index'))
 
+
+@app.route('/kitchen', methods = ['GET'])
+def kitchen():
+    u = User.query.get(session['id'])
+    if u.chef:
+        #return render_template(url_for('kitchen'))
+        return render_template('kitchen.html')
+    else:
+        #return render_template(url_for('selection'))
+        return render_template('selection.html')
+
+@app.route('/sink', methods = ['POST'])
+def sink():
+    u = User.query.get(session['id'])
+    if u.chef:
+        print('running sink')
+    return render_template('sink.html')
 
 @app.route('/selection', methods = ['GET'])
 def selection():
