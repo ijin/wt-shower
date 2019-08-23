@@ -17,6 +17,7 @@ python create_db.py
 INSERT INTO users VALUES(1,'test','1234',99, 0);
 INSERT INTO users VALUES(2,'chef','1111',99, 1);
 INSERT INTO users VALUES(3,'aaa','222',99, 0);
+INSERT INTO users VALUES(4,' kitchen admin','1212',99, 1);
 INSERT INTO showers VALUES(1,0,NULL,NULL,90);
 INSERT INTO showers VALUES(2,1,NULL,NULL,NULL);
 ```

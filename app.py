@@ -23,6 +23,9 @@ import piplates.RELAYplate as RELAY
 SHOWER_PIN_MAP = { 1:11, 2:12}
 PAUSE_TIME_UNTIL_RESET = 30
 PAUSE_TIME_WARNING = PAUSE_TIME_UNTIL_RESET - 15
+SINK_TIME = 600 # seconds
+SINK_STOP_BUFFER = 5 # seconds
+SINK_ID = 3
 
 app = Flask(__name__)
 app.secret_key = 'random string'
@@ -58,7 +61,7 @@ def login():
             session['id'] = u.id
             flash('You were successfully logged in')
             if u.chef:
-                return redirect(url_for('kitchen'))
+                return render_template('kitchen.html', name=u.name)
             else:
                 return redirect(url_for('selection'))
         else:
@@ -83,6 +86,8 @@ def sink():
     u = User.query.get(session['id'])
     if u.chef:
         print('running sink')
+        RELAY.relayON(3,int(SINK_ID))
+        enable_sink()
     return render_template('sink.html')
 
 @app.route('/selection', methods = ['GET'])
@@ -243,6 +248,7 @@ def periodic(txt):
 def incr():
     showers = running_showers()
     for k,v in enumerate(showers):
+        # if showers are running
         if int(v or 0) == 1:
             shower_id = k+1
             shower = f"shower_time_sum:{shower_id}"
@@ -261,7 +267,8 @@ def incr():
                 say(text)
                 shower_shutdown(shower_id)
                 break
-        else:
+        # if showers are stopped
+        elif (not v == None):
             shower_id = k+1
             s = Shower.query.filter_by(id=shower_id).first()
             if (not s.paused_at == None) and s.assigned == True:
@@ -276,13 +283,22 @@ def incr():
                 if elapsed_pause > PAUSE_TIME_WARNING:
                     text = f"Shower {shower_id} paused for a while. Shutting down unless it's resumed"
                     say.delay(text)
+    #if running_sink():
+    sink_ttl = running_sink_ttl()
+    if (sink_ttl > 0 and sink_ttl <= SINK_STOP_BUFFER):
+        print(f"stopping sink..")
+        RELAY.relayOFF(3,int(SINK_ID))
+    elif (sink_ttl > SINK_STOP_BUFFER):
+        print(f"sink is running. stopping in {redis.ttl('sink')}")
+    else:
+        print("sink stopped")
 
 def shower_shutdown(shower_id):
     db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned=False,started_at=None,paused_at=None,seconds_allocated=None))
     db_session.commit()
     #GPIO.output(shower_pin(int(shower_id)), 1)
     RELAY.relayOFF(3,int(shower_id))
-    redis.set(f"shower{shower_id}", 0)
+    redis.delete(f"shower{shower_id}")
     redis.set(f"shower_time_sum:{shower_id}", 0)
     text = f"Shutting down shower {shower_id}"
     print(text)
@@ -304,6 +320,13 @@ def say(text):
 
 def running_showers():
     return redis.mget('shower1', 'shower2')
+
+def enable_sink():
+    return redis.set('sink', 1, SINK_TIME + SINK_STOP_BUFFER)
+
+def running_sink_ttl():
+    #return redis.get('sink')
+    return redis.ttl('sink')
 
 def shower_pin(id):
     return SHOWER_PIN_MAP[id]
