@@ -2,7 +2,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_api import status 
 from database import db_session
-from models import User, Shower
+from models import User, Shower, Phrase
 from celery import Celery
 from celery.schedules import crontab
 from datetime import datetime
@@ -41,6 +41,8 @@ celery = Celery(
     backend=app.config['CELERY_RESULT_BACKEND'],
 )
 redis  = redis.Redis()
+
+phrase_count = Phrase.query.count()
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -260,7 +262,9 @@ def incr():
             print(f"time_left: {time_left}")
 
             if accumulated_shower_time == 20:
-                text = f"Hey, {s.assigned_to}, you look good"
+                index = random.randint(0, phrase_count-1)
+                phrase = Phrase.query.get(index).phrase
+                text = f"Hey, {s.assigned_to}, {phrase}"
                 say.delay(text)
                 print("20 seconds in")
             if time_left == 30:
@@ -282,7 +286,7 @@ def incr():
                 print (f"Shower {shower_id}")
                 print (f"Elapsed time since last pause: {elapsed_pause}")
                 if elapsed_pause > PAUSE_TIME_UNTIL_RESET:
-                    text = f"Shower {shower_id} paused for too long..."
+                    text = f"Hey {s.assigned_to}, Shower {shower_id} paused for too long..."
                     say(text)
                     shower_shutdown(shower_id)
                     break

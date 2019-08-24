@@ -36,3 +36,15 @@ class Shower(Base):
 
     def __repr__(self):
         return '<Shower %d>' % (self.id)
+
+class Phrase(Base):
+    __tablename__ = 'phrases'
+    id = Column(Integer, primary_key=True)
+    phrase = Column(String(200))
+
+    def __init__(self, id=None, phrase=None):
+        self.id = id
+        self.phrase = phrase
+
+    def __repr__(self):
+        return '<Phrase %d>' % (self.id)

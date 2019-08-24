@@ -20,6 +20,9 @@ INSERT INTO users VALUES(3,'aaa','222',99, 0);
 INSERT INTO users VALUES(4,' kitchen admin','1212',99, 1);
 INSERT INTO showers VALUES(1,NULL,NULL,NULL,NULL);
 INSERT INTO showers VALUES(2,NULL,NULL,NULL,NULL);
+INSERT INTO phrases VALUES(1, 'You look hot');
+INSERT INTO phrases VALUES(2, 'Enjoying it?');
+INSERT INTO phrases VALUES(3, 'You are doing well');
 ```
 
 # Run
