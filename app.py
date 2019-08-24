@@ -105,8 +105,8 @@ def instructions():
 
     if not shower:
         return render_template('unavailable.html')
-    #if not credits_available:
-    #    return render_template('no_credits.html')
+    if user.credits <= 0:
+        return render_template('no_credits.html')
     else:
         assign_shower(shower, user, credits)
         seconds = int(credits)*90
