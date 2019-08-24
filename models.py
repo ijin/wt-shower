@@ -22,16 +22,14 @@ class User(Base):
 class Shower(Base):
     __tablename__ = 'showers'
     id = Column(Integer, primary_key=True)
-    #status = Column(Boolean, default=False)
-    assigned = Column(Boolean, default=False)
+    assigned_to = Column(String(50))
     started_at = Column(DATETIME)
     paused_at = Column(DATETIME)
     seconds_allocated = Column(Integer)
 
-    def __init__(self, id=None, status=False, assigned=False, started_at=None, paused_at=None, seconds_allocated=0):
+    def __init__(self, id=None, status=False, assigned_to=None, started_at=None, paused_at=None, seconds_allocated=0):
         self.id = id
-        #self.status = status
-        self.assigned = assigned
+        self.assigned_to = assigned_to
         self.started_at = datetime.now()
         self.paused_at = paused_at
         self.seconds_allocated = seconds_allocated

@@ -12,8 +12,8 @@ import random
 import platform
 import redis
 import json
-import RPi.GPIO as GPIO
-import piplates.RELAYplate as RELAY
+#import RPi.GPIO as GPIO
+#import piplates.RELAYplate as RELAY
 
 #GPIO.setmode(GPIO.BCM)
 #GPIO.setup(11, GPIO.OUT)
@@ -86,7 +86,7 @@ def sink():
     u = User.query.get(session['id'])
     if u.chef:
         print('running sink')
-        RELAY.relayON(3,int(SINK_ID))
+        #RELAY.relayON(3,int(SINK_ID))
         enable_sink()
     return render_template('sink.html')
 
@@ -113,7 +113,7 @@ def instructions():
 
 # TODO: OOP
 def available_shower():
-    showers = Shower.query.filter_by(assigned=False).all()
+    showers = Shower.query.filter_by(assigned_to=None).all()
     count = len(showers)
     if count == 0:
         return None
@@ -126,7 +126,7 @@ def available_shower():
 def assign_shower(shower, user, credits):
     seconds = int(credits)*90
     user.credits -= int(credits)
-    shower.assigned = True
+    shower.assigned_to = user.name
     shower.seconds_allocated = seconds
     db_session.commit()
     redis.set(f"shower{shower.id}", 0)
@@ -175,8 +175,9 @@ def toggle():
 
 @app.route('/api/shower_toggle/<shower_id>')
 def shower_toggle(shower_id):
-    shower = Shower.query.filter_by(id=shower_id, assigned=True).first()
-    if shower == None:
+    #shower = Shower.query.filter_by(id=shower_id, not(assigned_to=None)).first()
+    shower = Shower.query.get(shower_id)
+    if shower.assigned_to == None:
         r  = f"shower{shower_id} NOT ASSIGNED"
         return r
     else:
@@ -184,7 +185,7 @@ def shower_toggle(shower_id):
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
         #GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
-        RELAY.relayTOGGLE(3,int(shower_id))
+        #RELAY.relayTOGGLE(3,int(shower_id))
         redis.set(f"shower{shower_id}", int(toggle_status))
         if int(toggle_status) == 1 and shower.started_at == None: # first shower
             shower.started_at = datetime.now()
@@ -257,21 +258,26 @@ def incr():
             s = Shower.query.filter_by(id=shower_id).first()
             time_left = s.seconds_allocated - accumulated_shower_time 
             print(f"time_left: {time_left}")
+
+            if accumulated_shower_time == 20:
+                text = f"Hey, {s.assigned_to}, you look good"
+                say.delay(text)
+                print("20 seconds in")
             if time_left == 30:
-                text = "30 seconds left.."
+                text = f"Hey, {s.assigned_to}, 30 seconds left.."
                 print(text)
                 say.delay(text)
             elif time_left <= 0:
                 text = "TIMES UP......"
                 print(text)
-                say(text)
                 shower_shutdown(shower_id)
+                say(text)
                 break
         # if showers are stopped
         elif (not v == None):
             shower_id = k+1
             s = Shower.query.filter_by(id=shower_id).first()
-            if (not s.paused_at == None) and s.assigned == True:
+            if (not s.paused_at == None) and (not s.assigned_to == None):
                 elapsed_pause = (datetime.now() - s.paused_at).total_seconds()
                 print (f"Shower {shower_id}")
                 print (f"Elapsed time since last pause: {elapsed_pause}")
@@ -287,17 +293,17 @@ def incr():
     sink_ttl = running_sink_ttl()
     if (sink_ttl > 0 and sink_ttl <= SINK_STOP_BUFFER):
         print(f"stopping sink..")
-        RELAY.relayOFF(3,int(SINK_ID))
+        #RELAY.relayOFF(3,int(SINK_ID))
     elif (sink_ttl > SINK_STOP_BUFFER):
         print(f"sink is running. stopping in {redis.ttl('sink')}")
     else:
         print("sink stopped")
 
 def shower_shutdown(shower_id):
-    db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned=False,started_at=None,paused_at=None,seconds_allocated=None))
+    db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned_to=None,started_at=None,paused_at=None,seconds_allocated=None))
     db_session.commit()
     #GPIO.output(shower_pin(int(shower_id)), 1)
-    RELAY.relayOFF(3,int(shower_id))
+    #RELAY.relayOFF(3,int(shower_id))
     redis.delete(f"shower{shower_id}")
     redis.set(f"shower_time_sum:{shower_id}", 0)
     text = f"Shutting down shower {shower_id}"
