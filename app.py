@@ -110,7 +110,7 @@ def instructions():
     else:
         assign_shower(shower, user, credits)
         seconds = int(credits)*90
-        escort_user(user.name, shower.id, seconds)
+        escort_user(user.pi_name, shower.id, seconds)
         return render_template('instructions.html', seconds=seconds, credits=user.credits, shower=shower.id)
 
 # TODO: OOP
@@ -128,7 +128,7 @@ def available_shower():
 def assign_shower(shower, user, credits):
     seconds = int(credits)*90
     user.credits -= int(credits)
-    shower.assigned_to = user.name
+    shower.assigned_to = user.pi_name
     shower.seconds_allocated = seconds
     db_session.commit()
     redis.set(f"shower{shower.id}", 0)

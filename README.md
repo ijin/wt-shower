@@ -14,10 +14,9 @@ python create_db.py
 # Seed data
 
 ```
-INSERT INTO users VALUES(1,'test','1234',99, 0);
-INSERT INTO users VALUES(2,'chef','1111',99, 1);
-INSERT INTO users VALUES(3,'aaa','222',99, 0);
-INSERT INTO users VALUES(4,' kitchen admin','1212',99, 1);
+INSERT INTO users VALUES(1,'test','test','1234',99, 0);
+INSERT INTO users VALUES(3,'aaa','A A A','222',99, 0);
+INSERT INTO users VALUES(4,' kitchen admin','kitchen Admin','1212',99, 1);
 INSERT INTO showers VALUES(1,NULL,NULL,NULL,NULL);
 INSERT INTO showers VALUES(2,NULL,NULL,NULL,NULL);
 INSERT INTO phrases VALUES(1, 'You look hot');

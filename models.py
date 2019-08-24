@@ -6,12 +6,14 @@ class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, index=True)
+    pi_name = Column(String(50), unique=True, index=True)
     password = Column(String(120), unique=True)
     credits = Column(Integer, unique=False)
     chef = Column(Boolean, default=False)
 
-    def __init__(self, name=None, email=None, password=None, credits=18):
+    def __init__(self, name=None, pi_name=None, password=None, credits=18):
         self.name = name
+        self.pi_name = pi_name
         self.password = password
         self.credits = credits
         self.chef = chef
