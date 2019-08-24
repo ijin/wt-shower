@@ -50,3 +50,21 @@ class Phrase(Base):
 
     def __repr__(self):
         return '<Phrase %d>' % (self.id)
+
+class Event(Base):
+    __tablename__ = 'events'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer)
+    credits = Column(Integer)
+    kitchen = Column(Boolean, default=False)
+    created_at = Column(DATETIME)
+
+    def __init__(self, id=None, user_id=None, credits=None, kitchen=None):
+        self.id = id
+        self.user_id = user_id
+        self.credits = credits
+        self.created_at = datetime.now()
+        self.kitchen = kitchen
+
+    def __repr__(self):
+        return '<Event %d>' % (self.id)

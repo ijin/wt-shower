@@ -2,7 +2,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_api import status 
 from database import db_session
-from models import User, Shower, Phrase
+from models import User, Shower, Phrase, Event
 from celery import Celery
 from celery.schedules import crontab
 from datetime import datetime
@@ -44,6 +44,9 @@ redis  = redis.Redis()
 
 phrase_count = Phrase.query.count()
 
+def log_event(uid, credits, kitchen=0, timestamp=datetime.now()):
+    os.system(f"echo '{timestamp}, {uid}, {credits}, {kitchen}'>> log.csv")
+
 @app.teardown_appcontext
 def shutdown_session(exception=None):
     db_session.remove()
@@ -58,6 +61,7 @@ def login():
     if request.method == 'POST':
         name = request.form['name']
         password = request.form['password']
+        print(f"{name}, {password}")
         u = User.query.filter(User.name == name, User.password == password).first()
         if u:
             session['id'] = u.id
@@ -89,6 +93,7 @@ def sink():
     if u.chef:
         print('running sink')
         #RELAY.relayON(3,int(SINK_ID))
+        log_event(u.id, 0, 1)
         enable_sink()
     return render_template('sink.html')
 
@@ -108,6 +113,7 @@ def instructions():
     if user.credits <= 0:
         return render_template('no_credits.html')
     else:
+        log_event(user.id, credits)
         assign_shower(shower, user, credits)
         seconds = int(credits)*90
         escort_user(user.pi_name, shower.id, seconds)
@@ -343,5 +349,4 @@ def shower_pin(id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
-
 
