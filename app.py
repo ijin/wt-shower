@@ -1,5 +1,5 @@
 # coding: utf-8
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, Response, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_api import status 
 from database import db_session
 from models import User, Shower, Phrase, Event
@@ -12,6 +12,8 @@ import random
 import platform
 import redis
 import json
+import nfc
+import queue
 #import RPi.GPIO as GPIO
 #import piplates.RELAYplate as RELAY
 
@@ -44,6 +46,69 @@ redis  = redis.Redis()
 
 phrase_count = Phrase.query.count()
 
+
+
+
+####  SSE
+
+class MessageAnnouncer:
+
+    def __init__(self):
+        self.listeners = []
+
+    def listen(self):
+        self.listeners.append(queue.Queue(maxsize=5))
+        return self.listeners[-1]
+
+    def announce(self, msg):
+        # We go in reverse order because we might have to delete an element, which will shift the
+        # indices backward
+        for i in reversed(range(len(self.listeners))):
+            try:
+                self.listeners[i].put_nowait(msg)
+            except queue.Full:
+                del self.listeners[i]
+
+announcer = MessageAnnouncer()
+
+def format_sse(data: str, event=None) -> str:
+    """Formats a string and an event name in order to follow the event stream convention.
+    >>> format_sse(data=json.dumps({'abc': 123}), event='Jackson 5')
+    'event: Jackson 5\\ndata: {"abc": 123}\\n\\n'
+    """
+    msg = f'data: {data}\n\n'
+    if event is not None:
+        msg = f'event: {event}\n{msg}'
+    return msg
+
+@app.route('/ping')
+def ping():
+    msg = format_sse(data='{"nfc":false}')
+    announcer.announce(msg=msg)
+    return {}, 200
+
+@app.route('/ping2')
+def ping2():
+    msg = format_sse(data='{"nfc":true}')
+    announcer.announce(msg=msg)
+    return {}, 200
+
+
+@app.route('/listen', methods=['GET'])
+def listen():
+
+    def stream():
+        messages = announcer.listen()  # returns a queue.Queue
+        while True:
+            msg = messages.get()  # blocks until a new message arrives
+            yield msg
+
+    return Response(stream(), mimetype='text/event-stream')
+
+####
+
+
+
 def log_event(uid, credits, kitchen=0, timestamp=datetime.now()):
     os.system(f"echo '{timestamp}, {uid}, {credits}, {kitchen}'>> log.csv")
 
@@ -63,6 +128,25 @@ def login():
         password = request.form['password']
         print(f"{name}, {password}")
         u = User.query.filter(User.name == name, User.password == password).first()
+        if u:
+            session['id'] = u.id
+            flash('You were successfully logged in')
+            if u.chef:
+                return render_template('kitchen.html', name=u.name)
+            else:
+                return redirect(url_for('selection'))
+        else:
+            flash('Wrong credentials!')
+            return redirect(url_for('index'))
+    else:
+        return redirect(url_for('index'))
+
+@app.route('/login_nfc', methods = ['POST', 'GET'])
+def login_nfc():
+    if request.method == 'POST':
+        nfc = request.form['nfc']
+        print(f"{nfc}")
+        u = User.query.filter(User.nfc == nfc).first()
         if u:
             session['id'] = u.id
             flash('You were successfully logged in')
