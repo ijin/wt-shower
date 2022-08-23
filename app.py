@@ -15,7 +15,7 @@ import json
 import nfc
 import queue
 #import RPi.GPIO as GPIO
-#import piplates.RELAYplate as RELAY
+import piplates.RELAYplate as RELAY
 
 #GPIO.setmode(GPIO.BCM)
 #GPIO.setup(11, GPIO.OUT)
@@ -284,7 +284,7 @@ def shower_toggle(shower_id):
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
         #GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
-        #RELAY.relayTOGGLE(3,int(shower_id))
+        RELAY.relayTOGGLE(3,int(shower_id))
         redis.set(f"shower{shower_id}", int(toggle_status))
         if int(toggle_status) == 1 and shower.started_at == None: # first shower
             shower.started_at = datetime.now()
