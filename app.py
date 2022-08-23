@@ -48,7 +48,6 @@ phrase_count = Phrase.query.count()
 
 
 
-
 ####  SSE
 
 class MessageAnnouncer:
@@ -76,14 +75,14 @@ def format_sse(data: str, event=None) -> str:
     >>> format_sse(data=json.dumps({'abc': 123}), event='Jackson 5')
     'event: Jackson 5\\ndata: {"abc": 123}\\n\\n'
     """
-    msg = f'data: {data}\n\n'
+    msg = f"data: {data}\n\n"
     if event is not None:
-        msg = f'event: {event}\n{msg}'
+        msg = f"event: {event}\n{msg}"
     return msg
 
 @app.route('/ping')
 def ping():
-    msg = format_sse(data='{"nfc":false}')
+    msg = SSE.format(data='{"nfc":false}')
     announcer.announce(msg=msg)
     return {}, 200
 
@@ -150,6 +149,8 @@ def login_nfc():
         if u:
             session['id'] = u.id
             flash('You were successfully logged in')
+            text = f", {u.name}"
+            say(text)
             if u.chef:
                 return render_template('kitchen.html', name=u.name)
             else:
