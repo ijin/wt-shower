@@ -5,6 +5,8 @@ import requests
 
 clf = nfc.ContactlessFrontend('usb')
 
+URL='http://localhost:5000/api/nfc'
+
 def process_IDm():
     global idm
     try:
@@ -12,7 +14,7 @@ def process_IDm():
         idm = binascii.hexlify(tag.identifier).upper()
         idm = idm.decode()
         print(idm)
-        requests.get('http://localhost:5000/ping2')
+        r = requests.get(f"{URL}/{idm}")
 
     except AttributeError:
         print("error")

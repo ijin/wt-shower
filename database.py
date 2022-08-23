@@ -5,7 +5,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import logging
 
 logging.basicConfig()
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+#logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 engine = create_engine('sqlite:///app.db', convert_unicode=True)
 db_session = scoped_session(sessionmaker(autocommit=False,

@@ -20,16 +20,16 @@
         var data = JSON.parse(event.data);
 	console.log(data);
 	//if (data.nfc) alert('hi');
-	if (data.nfc) redirectPost('/login_nfc', { nfc: 1 });
+	if ("nfc" in data) redirectPost('/login_nfc', { nfc: data.nfc });
     }, false);
 </script>
 
 {% extends "base.html" %}
 {% block content %}
-      {% with messages = get_flashed_messages() %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
          {% if messages %}
-               {% for message in messages %}
-	       <div class="alert alert-danger" role="alert">{{ message }}</div>
+               {% for category, message in messages %}
+	       <div class="{{ category }}">{{ message }}</div>
                {% endfor %}
          {% endif %}
       {% endwith %}

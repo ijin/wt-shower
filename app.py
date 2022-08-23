@@ -135,7 +135,7 @@ def login():
             else:
                 return redirect(url_for('selection'))
         else:
-            flash('Wrong credentials!')
+            flash('Wrong credentials!', 'alert alert-danger')
             return redirect(url_for('index'))
     else:
         return redirect(url_for('index'))
@@ -156,7 +156,7 @@ def login_nfc():
             else:
                 return redirect(url_for('selection'))
         else:
-            flash('Wrong credentials!')
+            flash('Wrong credentials!', 'alert alert-danger')
             return redirect(url_for('index'))
     else:
         return redirect(url_for('index'))
@@ -229,7 +229,7 @@ def assign_shower(shower, user, credits):
 @app.route('/logout', methods = ['POST'])
 def logout():
     session.clear()
-    flash('Welcome back')
+    flash('Welcome back', 'alert alert-primary')
     return redirect(url_for('index'))
 
 
@@ -244,6 +244,12 @@ def test():
 
 
 # API
+@app.route('/api/nfc/<nfc_id>')
+def nfc(nfc_id):
+    msg = format_sse(data={"nfc": nfc_id}).replace("'", '"')
+    announcer.announce(msg=msg)
+    return {}, 200
+
 @app.route('/api/toggle', methods = ['POST'])
 def toggle():
     try:

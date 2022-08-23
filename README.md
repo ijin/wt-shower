@@ -11,6 +11,25 @@ pip install -r requirements.txt
 python create_db.py
 ```
 
+verify nfc reader. Look for `Sony Corp.`
+
+```
+lsusb
+```
+
+enable nfc reader
+
+```
+python -m nfc
+```
+
+i.e.
+```
+sudo sh -c 'echo SUBSYSTEM==\"usb\", ACTION==\"add\", ATTRS{idVendor}==\"054c\", ATTRS{idProduct}==\"06c1\", GROUP=\"plugdev\" >> /etc/udev/rules.d/nfcdev.rules'
+sudo udevadm control -R # then re-attach device
+```
+
+
 # Seed data
 .mode csv
 .import w.csv users
