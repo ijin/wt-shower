@@ -353,24 +353,24 @@ def incr():
             shower_id = k+1
             shower = f"shower_time_sum:{shower_id}"
             accumulated_shower_time = redis.incr(shower)
-            print(f"Shower {shower_id}: total time used: {accumulated_shower_time}")
+            print(f"Shower {shower_id}: [RUNNING] total time used: {accumulated_shower_time}")
             s = Shower.query.filter_by(id=shower_id).first()
             time_left = s.seconds_allocated - accumulated_shower_time 
-            print(f"time_left: {time_left}")
+            print(f"Shower {shower_id}: [RUNNING] time_left -  {time_left}")
 
             if accumulated_shower_time == 20:
                 index = random.randint(0, phrase_count-1)
                 phrase = Phrase.query.get(index).phrase
+                print("Shower {shower_id}: [RUNNING] 20 seconds in. Saying something.")
                 text = f"Hey, {s.assigned_to}, {phrase}"
                 say.delay(text)
-                print("20 seconds in")
             if time_left == 30:
+                print("Shower {shower_id}: [RUNNING] 30 seconds in")
                 text = f"Hey, {s.assigned_to}, 30 seconds left.."
-                print(text)
                 say.delay(text)
             elif time_left <= 0:
                 text = "TIMES UP......"
-                print(text)
+                print("Shower {shower_id}: [TIME UP]")
                 shower_shutdown(shower_id)
                 say(text)
                 break
@@ -380,14 +380,15 @@ def incr():
             s = Shower.query.filter_by(id=shower_id).first()
             if (not s.paused_at == None) and (not s.assigned_to == None):
                 elapsed_pause = (datetime.now() - s.paused_at).total_seconds()
-                print (f"Shower {shower_id}")
-                print (f"Elapsed time since last pause: {elapsed_pause}")
+                print (f"Shower {shower_id}: [PAUSED] Elapsed time since last pause: {elapsed_pause}")
                 if elapsed_pause > PAUSE_TIME_UNTIL_RESET:
-                    text = f"Hey {s.assigned_to}, Shower {shower_id} paused for too long..."
+                    print (f"Shower {shower_id}: [SHUTDOWN] {s.assigned_to} paused for too long")
+                    text = f"Hey {s.assigned_to}, Shower {shower_id} paused for too long...Shutting down"
                     say(text)
                     shower_shutdown(shower_id)
                     break
                 if elapsed_pause > PAUSE_TIME_WARNING:
+                    print (f"Shower {shower_id}: [RUNNING] paused warning")
                     text = f"Shower {shower_id} paused for a while. Shutting down unless it's resumed"
                     say.delay(text)
     #if running_sink():
