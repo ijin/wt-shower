@@ -16,8 +16,8 @@ def process_IDm():
         print(idm)
         r = requests.get(f"{URL}/{idm}")
 
-    except AttributeError:
-        print("error")
+    except Exception as e:
+        print("error: {}".format(e))
 
 while True:
     process_IDm()
