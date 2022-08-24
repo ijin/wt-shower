@@ -47,7 +47,7 @@ def main():
                     print_message("button 1 pressed")
                     toggle_shower(1)
              
-            # 「処理中」はボタンＢを確認して処理をキャンセル
+            # cancel work if button 2 pressed. shouldn't be a problem
             elif status == 1:
                 loop += 1
                 if g_button_b:
