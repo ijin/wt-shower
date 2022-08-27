@@ -19,6 +19,7 @@ def process_IDm():
     except Exception as e:
         print("error: {}".format(e))
 
+print("Reading NFC tags")
 while True:
     process_IDm()
     time.sleep(3)

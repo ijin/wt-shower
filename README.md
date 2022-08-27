@@ -62,8 +62,32 @@ celery -A app.celery beat -l info
 swtich control
 
 ```
-python hello_gpio2.py
+python hello_gpio3.py
 ```
+
+nfc reader
+```
+python nfc_reader.py
+```
+
+# systemd
+
+restart
+
+```
+sudo systemctl restart shower-app shower-worker shower-beater shower-gpio shower-nfc
+
+```
+
+logs
+```
+journalctl -f -u shower-app -o cat | ccze
+journalctl -f -u shower-worker -o cat | ccze
+journalctl -f -u shower-beater -o cat | ccze
+journalctl -f -u shower-gpio | ccze
+journalctl -f -u shower-nfc | ccze
+```
+
 
 # Mac Development
 

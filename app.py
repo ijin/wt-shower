@@ -6,6 +6,7 @@ from models import User, Shower, Phrase, Event
 from celery import Celery
 from celery.schedules import crontab
 from datetime import datetime
+from time import sleep
 
 import os
 import random
@@ -149,7 +150,7 @@ def login_nfc():
         if u:
             session['id'] = u.id
             flash('You were successfully logged in')
-            text = f", {u.name}"
+            text = f"Welcome, {u.name}"
             say(text)
             if u.chef:
                 return render_template('kitchen.html', name=u.name)
@@ -225,6 +226,11 @@ def assign_shower(shower, user, credits):
     redis.set(f"shower{shower.id}", 0)
     redis.set(f"shower_time_sum:{shower.id}", 0)
     return shower
+
+#def abandoned_showers():
+#    showers = Shower.query.filter_by(assigned_to != None, started_at >  a - 30
+#    seconds = int(credits)*90
+#    user.credits -= int(credits)
 
 @app.route('/logout', methods = ['POST'])
 def logout():
@@ -332,6 +338,7 @@ def error_handler(error):
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(1.0, incr.s(), name='increment')
+#    sender.add_periodic_task(10.0, cleanup.s(), name='cleanup')
     #sender.add_periodic_task(1.0, periodic.s('hello'), name='add every second')
 
 @celery.task
@@ -346,6 +353,7 @@ def periodic(txt):
 # check_shower
 # TODO: warn if stopped (logfile?)
 def incr():
+  try:
     showers = running_showers()
     for k,v in enumerate(showers):
         # if showers are running
@@ -353,10 +361,10 @@ def incr():
             shower_id = k+1
             shower = f"shower_time_sum:{shower_id}"
             accumulated_shower_time = redis.incr(shower)
-            print(f"Shower {shower_id}: [RUNNING] total time used: {accumulated_shower_time}")
+            print(f"Shower {shower_id}: [RUNNING] time used: {accumulated_shower_time}")
             s = Shower.query.filter_by(id=shower_id).first()
             time_left = s.seconds_allocated - accumulated_shower_time 
-            print(f"Shower {shower_id}: [RUNNING] time_left -  {time_left}")
+            print(f"Shower {shower_id}: [RUNNING] time left:  {time_left}")
 
             if accumulated_shower_time == 20:
                 index = random.randint(0, phrase_count-1)
@@ -365,7 +373,7 @@ def incr():
                 text = f"Hey, {s.assigned_to}, {phrase}"
                 say.delay(text)
             if time_left == 30:
-                print("Shower {shower_id}: [RUNNING] 30 seconds in")
+                print("Shower {shower_id}: [RUNNING] 30 seconds left")
                 text = f"Hey, {s.assigned_to}, 30 seconds left.."
                 say.delay(text)
             elif time_left <= 0:
@@ -380,17 +388,26 @@ def incr():
             s = Shower.query.filter_by(id=shower_id).first()
             if (not s.paused_at == None) and (not s.assigned_to == None):
                 elapsed_pause = (datetime.now() - s.paused_at).total_seconds()
-                print (f"Shower {shower_id}: [PAUSED] Elapsed time since last pause: {elapsed_pause}")
-                if elapsed_pause > PAUSE_TIME_UNTIL_RESET:
-                    print (f"Shower {shower_id}: [SHUTDOWN] {s.assigned_to} paused for too long")
+                #print(f"Shower {shower_id}: [PAUSED] Elapsed time since last pause: {elapsed_pause}")
+                shower_shutdown_status = int(redis.get(f"shower{shower_id}_shutdown") or 0)
+                if (elapsed_pause > PAUSE_TIME_UNTIL_RESET and shower_shutdown_status == 0):
+                    redis.set(f"shower{shower_id}_shutdown", 1)
+                    print(f"Shower {shower_id}: [SHUTDOWN] {s.assigned_to} paused for too long")
                     text = f"Hey {s.assigned_to}, Shower {shower_id} paused for too long...Shutting down"
                     say(text)
                     shower_shutdown(shower_id)
-                    break
-                if elapsed_pause > PAUSE_TIME_WARNING:
-                    print (f"Shower {shower_id}: [RUNNING] paused warning")
-                    text = f"Shower {shower_id} paused for a while. Shutting down unless it's resumed"
+                    redis.set(f"shower{shower_id}_shutdown", 0)
+                    raise Exception(f"Shower {shower_id}: [SHUTDOWN]......")
+                if (elapsed_pause > PAUSE_TIME_WARNING and elapsed_pause < PAUSE_TIME_WARNING + 1):
+                    print(f"Shower {shower_id}: [PAUSED] warning for shutdown")
+                    text = f"Shower {shower_id} paused for a while. Shutting down in 10 seconds"
                     say.delay(text)
+                    sleep(5)
+                elif (elapsed_pause > 0):
+                    print(f"Shower {shower_id}: [PAUSED] Elapsed time since last pause: {elapsed_pause}")
+            # if assigned but paused
+            else:
+                print("assigned but not paused")
     #if running_sink():
     sink_ttl = running_sink_ttl()
     if (sink_ttl > 0 and sink_ttl <= SINK_STOP_BUFFER):
@@ -400,6 +417,9 @@ def incr():
         print(f"sink is running. stopping in {redis.ttl('sink')}")
     else:
         print("sink stopped")
+  except Exception as e:
+        print("error: {}".format(e))
+
 
 def shower_shutdown(shower_id):
     db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned_to=None,started_at=None,paused_at=None,seconds_allocated=None))
