@@ -276,7 +276,8 @@ def toggle():
         shower_id = j['shower']
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
-        GPIO.output(shower_pin(shower_id), not toggle_status) # 1 == off
+        GPIO.output(shower_pin(shower_id), toggle_status) # 0 == off
+        #GPIO.output(shower_pin(shower_id), not toggle_status) # 1 == off
         #RELAY.relayTOGGLE(3,int(shower_id))
         redis.set(f"shower{shower_id}", int(toggle_status))
         print(f"shower id: {shower_id}, status: {toggle_status}")
@@ -302,7 +303,8 @@ def shower_toggle(shower_id):
         # TODO: DRY
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
-        GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
+        GPIO.output(shower_pin(int(shower_id)), toggle_status) # 0 == off
+        #GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
         #RELAY.relayTOGGLE(3,int(shower_id))
         redis.set(f"shower{shower_id}", int(toggle_status))
         if int(toggle_status) == 1 and shower.started_at == None: # first shower
@@ -450,7 +452,8 @@ def incr():
 def shower_shutdown(shower_id):
     db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned_to=None,started_at=None,paused_at=None,seconds_allocated=None))
     db_session.commit()
-    GPIO.output(shower_pin(int(shower_id)), 1)
+    GPIO.output(shower_pin(int(shower_id)), 0)
+    #GPIO.output(shower_pin(int(shower_id)), 1)
     #RELAY.relayOFF(3,int(shower_id))
     redis.delete(f"shower{shower_id}")
     redis.set(f"shower_time_sum:{shower_id}", 0)
