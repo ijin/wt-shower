@@ -9,7 +9,7 @@ from celery.utils.log import get_task_logger
 from celery import Celery
 from celery.signals import after_setup_task_logger
 from celery.app.log import TaskFormatter
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
 
 import os
@@ -37,6 +37,7 @@ PAUSE_TIME_WARNING = PAUSE_TIME_UNTIL_RESET - 15
 SINK_TIME = 600 # seconds
 SINK_STOP_BUFFER = 5 # seconds
 SINK_ID = 21
+SHOWER_CLEANUP_SECONDS = 600
 
 app = Flask(__name__)
 app.secret_key = 'random string'
@@ -243,10 +244,10 @@ def assign_shower(shower, user, credits):
     redis.set(f"shower_time_sum:{shower.id}", 0)
     return shower
 
-#def abandoned_showers():
-#    showers = Shower.query.filter_by(assigned_to != None, started_at >  a - 30
-#    seconds = int(credits)*90
-#    user.credits -= int(credits)
+def abandoned_showers():
+    showers = Shower.query.filter(Shower.assigned_to != None, Shower.started_at < datetime.today() - timedelta(seconds=SHOWER_CLEANUP_SECONDS)).all()
+    logger.info(f"abandoned showers: {len(showers)}")
+    return showers
 
 @app.route('/logout', methods = ['POST'])
 def logout():
@@ -356,7 +357,7 @@ def error_handler(error):
 @celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(1.0, incr.s(), name='increment')
-#    sender.add_periodic_task(10.0, cleanup.s(), name='cleanup')
+    sender.add_periodic_task(300.0, cleanup.s(), name='cleanup')
     #sender.add_periodic_task(1.0, periodic.s('hello'), name='add every second')
 
 @celery.task
@@ -452,6 +453,19 @@ def incr():
   except Exception as e:
         print("error: {}".format(e))
 
+@celery.task
+def cleanup():
+  try:
+    showers = abandoned_showers()
+    for s in showers:
+        logger.warn(f"Cleaning up abandoned shower: {s.id}")
+        redis.set(f"shower{s.id}_shutdown", 0)
+        redis.delete(f"shower{s.id}")
+        s.assigned_to=None
+        s.started_at=None
+        db_session.commit()
+  except Exception as e:
+        print("error: {}".format(e))
 
 def shower_shutdown(shower_id):
     db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned_to=None,started_at=None,paused_at=None,seconds_allocated=None))
