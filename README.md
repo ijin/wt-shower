@@ -84,8 +84,10 @@ logs
 journalctl -f -u shower-app -o cat | ccze
 journalctl -f -u shower-worker -o cat | ccze
 journalctl -f -u shower-beater -o cat | ccze
-journalctl -f -u shower-gpio | ccze
+#journalctl -f -u shower-gpio | ccze
 journalctl -f -u shower-nfc | ccze
+journalctl -f -u shower-1 | ccze
+journalctl -f -u shower-2 | ccze
 ```
 
 

@@ -5,6 +5,10 @@ from database import db_session
 from models import User, Shower, Phrase, Event
 from celery import Celery
 from celery.schedules import crontab
+from celery.utils.log import get_task_logger
+from celery import Celery
+from celery.signals import after_setup_task_logger
+from celery.app.log import TaskFormatter
 from datetime import datetime
 from time import sleep
 
@@ -15,15 +19,18 @@ import redis
 import json
 import nfc
 import queue
-#import RPi.GPIO as GPIO
-import piplates.RELAYplate as RELAY
+import RPi.GPIO as GPIO
+#import piplates.RELAYplate as RELAY
 
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(11, GPIO.OUT)
-#GPIO.setup(12, GPIO.OUT)
+# contact relay 1 & 2
+GPIO.setmode(GPIO.BCM)
+#GPIO.setup(20, GPIO.OUT)
+#GPIO.setup(21, GPIO.OUT)
+GPIO.setup(19, GPIO.OUT)
+GPIO.setup(26, GPIO.OUT)
 
 
-SHOWER_PIN_MAP = { 1:11, 2:12}
+SHOWER_PIN_MAP = { 1:19, 2:26}
 PAUSE_TIME_UNTIL_RESET = 30
 PAUSE_TIME_WARNING = PAUSE_TIME_UNTIL_RESET - 15
 SINK_TIME = 600 # seconds
@@ -47,7 +54,12 @@ redis  = redis.Redis()
 
 phrase_count = Phrase.query.count()
 
+logger = get_task_logger(__name__)
 
+@after_setup_task_logger.connect
+def setup_task_logger(logger, *args, **kwargs):
+    for handler in logger.handlers:
+        handler.setFormatter(TaskFormatter('%(asctime)s - %(task_id)s - %(task_name)s - %(name)s - %(levelname)s - %(message)s'))
 
 ####  SSE
 
@@ -151,7 +163,7 @@ def login_nfc():
             session['id'] = u.id
             flash('You were successfully logged in')
             text = f"Welcome, {u.name}"
-            say(text)
+            #say(text)
             if u.chef:
                 return render_template('kitchen.html', name=u.name)
             else:
@@ -179,6 +191,7 @@ def sink():
     if u.chef:
         print('running sink')
         #RELAY.relayON(3,int(SINK_ID))
+        GPIO.output(shower_pin(int(shower_id)), 0)
         log_event(u.id, 0, 1)
         enable_sink()
     return render_template('sink.html')
@@ -263,8 +276,8 @@ def toggle():
         shower_id = j['shower']
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
-        #GPIO.output(shower_pin(shower_id), not toggle_status) # 1 == off
-        RELAY.relayTOGGLE(3,int(shower_id))
+        GPIO.output(shower_pin(shower_id), not toggle_status) # 1 == off
+        #RELAY.relayTOGGLE(3,int(shower_id))
         redis.set(f"shower{shower_id}", int(toggle_status))
         print(f"shower id: {shower_id}, status: {toggle_status}")
         result = {
@@ -289,8 +302,8 @@ def shower_toggle(shower_id):
         # TODO: DRY
         shower_status = int(redis.get(f"shower{shower_id}") or 0)
         toggle_status = not bool(shower_status)
-        #GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
-        RELAY.relayTOGGLE(3,int(shower_id))
+        GPIO.output(shower_pin(int(shower_id)), not toggle_status) # 1 == off
+        #RELAY.relayTOGGLE(3,int(shower_id))
         redis.set(f"shower{shower_id}", int(toggle_status))
         if int(toggle_status) == 1 and shower.started_at == None: # first shower
             shower.started_at = datetime.now()
@@ -307,8 +320,8 @@ def shower_off(shower_id):
     try:
         #j = request.get_json()
         #shower_id = j['shower']
-        #GPIO.output(shower_pin(int(shower_id)), 1)
-        RELAY.relayOFF(3,int(shower_id))
+        GPIO.output(shower_pin(int(shower_id)), 1)
+        #RELAY.relayOFF(3,int(shower_id))
         redis.set(f"shower{shower_id}", 0)
         return "off"
     except Exception as e:
@@ -362,23 +375,28 @@ def incr():
             shower = f"shower_time_sum:{shower_id}"
             accumulated_shower_time = redis.incr(shower)
             print(f"Shower {shower_id}: [RUNNING] time used: {accumulated_shower_time}")
+            logger.info(f"Shower {shower_id}: [RUNNING] time used: {accumulated_shower_time}")
             s = Shower.query.filter_by(id=shower_id).first()
             time_left = s.seconds_allocated - accumulated_shower_time 
-            print(f"Shower {shower_id}: [RUNNING] time left:  {time_left}")
+            print(f"Shower {shower_id}: [RUNNING] time left: {time_left}")
+            logger.info(f"Shower {shower_id}: [RUNNING] time left: {time_left}")
 
             if accumulated_shower_time == 20:
                 index = random.randint(0, phrase_count-1)
                 phrase = Phrase.query.get(index).phrase
-                print("Shower {shower_id}: [RUNNING] 20 seconds in. Saying something.")
+                print(f"Shower {shower_id}: [RUNNING] 20 seconds in. Saying something.")
+                logger.info(f"Shower {shower_id}: [RUNNING] 20 seconds in. Saying something.")
                 text = f"Hey, {s.assigned_to}, {phrase}"
                 say.delay(text)
             if time_left == 30:
-                print("Shower {shower_id}: [RUNNING] 30 seconds left")
+                print(f"Shower {shower_id}: [RUNNING] 30 seconds left")
+                logger.info(f"Shower {shower_id}: [RUNNING] 30 seconds left")
                 text = f"Hey, {s.assigned_to}, 30 seconds left.."
                 say.delay(text)
             elif time_left <= 0:
                 text = "TIMES UP......"
-                print("Shower {shower_id}: [TIME UP]")
+                print(f"Shower {shower_id}: [TIME UP]")
+                logger.info(f"Shower {shower_id}: [TIME UP]")
                 shower_shutdown(shower_id)
                 say(text)
                 break
@@ -393,6 +411,7 @@ def incr():
                 if (elapsed_pause > PAUSE_TIME_UNTIL_RESET and shower_shutdown_status == 0):
                     redis.set(f"shower{shower_id}_shutdown", 1)
                     print(f"Shower {shower_id}: [SHUTDOWN] {s.assigned_to} paused for too long")
+                    logger.info(f"Shower {shower_id}: [SHUTDOWN] {s.assigned_to} paused for too long")
                     text = f"Hey {s.assigned_to}, Shower {shower_id} paused for too long...Shutting down"
                     say(text)
                     shower_shutdown(shower_id)
@@ -400,23 +419,30 @@ def incr():
                     raise Exception(f"Shower {shower_id}: [SHUTDOWN]......")
                 if (elapsed_pause > PAUSE_TIME_WARNING and elapsed_pause < PAUSE_TIME_WARNING + 1):
                     print(f"Shower {shower_id}: [PAUSED] warning for shutdown")
+                    logger.info(f"Shower {shower_id}: [PAUSED] warning for shutdown")
                     text = f"Shower {shower_id} paused for a while. Shutting down in 10 seconds"
                     say.delay(text)
                     sleep(5)
                 elif (elapsed_pause > 0):
                     print(f"Shower {shower_id}: [PAUSED] Elapsed time since last pause: {elapsed_pause}")
+                    logger.info(f"Shower {shower_id}: [PAUSED] Elapsed time since last pause: {elapsed_pause}")
             # if assigned but paused
             else:
                 print("assigned but not paused")
+                logger.info("assigned but not paused")
     #if running_sink():
     sink_ttl = running_sink_ttl()
     if (sink_ttl > 0 and sink_ttl <= SINK_STOP_BUFFER):
         print(f"stopping sink..")
+        logger.info(f"stopping sink..")
         #RELAY.relayOFF(3,int(SINK_ID))
+        GPIO.output(shower_pin(int(shower_id)), 1)
     elif (sink_ttl > SINK_STOP_BUFFER):
         print(f"sink is running. stopping in {redis.ttl('sink')}")
+        logger.info(f"sink is running. stopping in {redis.ttl('sink')}")
     else:
         print("sink stopped")
+        logger.info("sink stopped")
   except Exception as e:
         print("error: {}".format(e))
 
@@ -424,7 +450,7 @@ def incr():
 def shower_shutdown(shower_id):
     db_session.query(Shower).filter_by(id=shower_id).update(dict(assigned_to=None,started_at=None,paused_at=None,seconds_allocated=None))
     db_session.commit()
-    #GPIO.output(shower_pin(int(shower_id)), 1)
+    GPIO.output(shower_pin(int(shower_id)), 1)
     #RELAY.relayOFF(3,int(shower_id))
     redis.delete(f"shower{shower_id}")
     redis.set(f"shower_time_sum:{shower_id}", 0)
@@ -441,10 +467,15 @@ def escort_user(user, shower, seconds):
 # Helper functions
 @celery.task
 def say(text):
+  try:
     if platform.system() == 'Darwin':
         os.system("say " + text)
     else:
         os.system(f"espeak-ng '{text}' --stdout | aplay")
+  except Exception as e:
+    print("error: {}".format(e))
+
+
 
 def running_showers():
     return redis.mget('shower1', 'shower2')
