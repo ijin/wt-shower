@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
+  <script>
+    function doSubmit() { document.getElementById('logout').submit(); }
+    setTimeout(doSubmit, 30000);
+  </script>
   <div class="container">
     <div class="row justify-content-md-center">
       <div class="alert alert-success" role="alert">
@@ -12,7 +16,7 @@
   </div>
   <div class="container">
     <div class="row justify-content-md-center">
-      <form action="/logout" method="POST">
+      <form id="logout" action="/logout" method="POST">
         <button class="btn btn-info btn-lg">Back to home</button>
       </form>
     </div>
