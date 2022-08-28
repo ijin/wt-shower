@@ -28,6 +28,7 @@ GPIO.setmode(GPIO.BCM)
 #GPIO.setup(21, GPIO.OUT)
 GPIO.setup(19, GPIO.OUT)
 GPIO.setup(26, GPIO.OUT)
+GPIO.setup(21, GPIO.OUT)
 
 
 SHOWER_PIN_MAP = { 1:19, 2:26}
@@ -35,7 +36,7 @@ PAUSE_TIME_UNTIL_RESET = 30
 PAUSE_TIME_WARNING = PAUSE_TIME_UNTIL_RESET - 15
 SINK_TIME = 600 # seconds
 SINK_STOP_BUFFER = 5 # seconds
-SINK_ID = 3
+SINK_ID = 21
 
 app = Flask(__name__)
 app.secret_key = 'random string'
@@ -191,9 +192,11 @@ def sink():
     if u.chef:
         print('running sink')
         #RELAY.relayON(3,int(SINK_ID))
-        GPIO.output(shower_pin(int(shower_id)), 0)
+        #GPIO.output(shower_pin(int(shower_id)), 0)
+        GPIO.output(SINK_ID, 1)
         log_event(u.id, 0, 1)
         enable_sink()
+        say("Yay, The kitchen sink will run for 10 minutes")
     return render_template('sink.html')
 
 @app.route('/selection', methods = ['GET'])
@@ -438,7 +441,8 @@ def incr():
         print(f"stopping sink..")
         logger.info(f"stopping sink..")
         #RELAY.relayOFF(3,int(SINK_ID))
-        GPIO.output(shower_pin(int(shower_id)), 1)
+        #GPIO.output(shower_pin(int(shower_id)), 1)
+        GPIO.output(SINK_ID, 0)
     elif (sink_ttl > SINK_STOP_BUFFER):
         print(f"sink is running. stopping in {redis.ttl('sink')}")
         logger.info(f"sink is running. stopping in {redis.ttl('sink')}")
