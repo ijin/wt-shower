@@ -33,7 +33,7 @@ def main():
          
         for button in buttons:
             GPIO.setup(button[0], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(button[0], GPIO.FALLING, bouncetime=100)
+            GPIO.add_event_detect(button[0], GPIO.FALLING, bouncetime=200)
             GPIO.add_event_callback(button[0], button[1])
          
         while True:

@@ -167,7 +167,7 @@ def login_nfc():
             text = f"Welcome, {u.name}"
             #say(text)
             if u.chef:
-                return render_template('kitchen.html', name=u.name)
+                return render_template('kitchen.html', name=u.name, pi_name=u.pi_name)
             else:
                 return redirect(url_for('selection'))
         else:
