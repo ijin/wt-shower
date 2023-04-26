@@ -10,13 +10,15 @@ class User(Base):
     password = Column(String(120), unique=True)
     credits = Column(Integer, unique=False)
     chef = Column(Boolean, default=False)
+    nfc = Column(String(50), unique=True, index=True)
 
-    def __init__(self, name=None, pi_name=None, password=None, credits=18):
+    def __init__(self, name=None, pi_name=None, password=None, credits=18, nfc=None):
         self.name = name
         self.pi_name = pi_name
         self.password = password
         self.credits = credits
         self.chef = chef
+        self.nfc = nfc
 
     def __repr__(self):
         return '<User %r>' % (self.name)

@@ -10,3 +10,5 @@ rpi.gpio
 pi-plates
 #spidev
 #six
+nfcpy
+sseclient

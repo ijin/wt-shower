@@ -1,9 +1,35 @@
+<script>
+    function redirectPost(url, data) {
+        var form = document.createElement('form');
+        document.body.appendChild(form);
+        form.method = 'post';
+        form.action = url;
+        for (var name in data) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = name;
+            input.value = data[name];
+            form.appendChild(input);
+        }
+        form.submit();
+    }
+
+    console.log('hi');
+    var source = new EventSource("/listen");
+    source.addEventListener('message', function(event) {
+        var data = JSON.parse(event.data);
+	console.log(data);
+	//if (data.nfc) alert('hi');
+	if ("nfc" in data) redirectPost('/login_nfc', { nfc: data.nfc });
+    }, false);
+</script>
+
 {% extends "base.html" %}
 {% block content %}
-      {% with messages = get_flashed_messages() %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
          {% if messages %}
-               {% for message in messages %}
-	       <div class="alert alert-danger" role="alert">{{ message }}</div>
+               {% for category, message in messages %}
+	       <div class="{{ category }}">{{ message }}</div>
                {% endfor %}
          {% endif %}
       {% endwith %}
@@ -14,9 +40,31 @@
         });
       });
     </script>
+
+
+    <div class="jumbotron">
+      <h1>
+          🔥 -)'(- 🔥
+	  </br>
+	  </br>
+	  Wrongtown Shower System
+      </h1>
+      <br />
+      <br />
+      <div class="alert alert-info" role="alert">
+       <span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true"></span>
+       <span class="sr-only">Error:</span>
+        scan your pendant
+      </div>
+    </div>
+
+<!--
     <form class="form-login" action="/login" method="POST">
+-->
     	    <!--  <img class="mb-4" src="https://getbootstrap.com/docs/4.3/assets/brand/bootstrap-solid.svg" alt="" width="72" height="72">-->
-      <h1 class="h3 mb-3 font-weight-normal">Please log in</h1>
+<!--
+      <h1 class="h3 mb-3 font-weight-normal text-primary">Please</h1>
+
       <label for="inputName" class="sr-only">Name</label>
       <select name="name" class="form-control form-control-lg mp-5" id="inputName">
         {% for user in users %}
@@ -27,7 +75,8 @@
       <label for="inputPassword" class="sr-only">PIN code</label>
       <input type="password" name="password" id="inputPassword" class="form-control" placeholder="PIN code" required>
       <br />
-      <button class="btn btn-lg btn-primary btn-block" type="submit">Log in</button>
+      <button class="btn btn-lg btn-primary btn-block" type="submit">Please scan your pendant</button>
     </form>
+-->
 {% endblock %}
 
