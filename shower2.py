@@ -6,7 +6,7 @@ import RPi.GPIO as GPIO
 import requests
  
 
-BUTTON_A = 16
+BUTTON_A = 6
 BUTTON_B = 9
  
 g_button_a = False
