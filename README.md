@@ -37,8 +37,10 @@ sudo udevadm control -R # then re-attach device
 INSERT INTO users VALUES(1,' kitchen_admin','kitchen Admin','99887',99, 1);
 INSERT INTO users VALUES(2,'aaa','A A A','92629',99, 0);
 INSERT INTO users VALUES(112,'Marshal Lane','Marshal Lane','485666',12, 0);
-INSERT INTO showers VALUES(1,NULL,NULL,NULL,NULL);
-INSERT INTO showers VALUES(2,NULL,NULL,NULL,NULL);
+#INSERT INTO showers VALUES(1,NULL,NULL,NULL,NULL);
+#INSERT INTO showers VALUES(2,NULL,NULL,NULL,NULL);
+insert into showers (id) values (1);
+insert into showers (id) values (2);
 INSERT INTO phrases VALUES(1, 'You look hot');
 INSERT INTO phrases VALUES(2, 'Enjoying it?');
 INSERT INTO phrases VALUES(3, 'You are doing well');
@@ -103,4 +105,7 @@ install emulator
 ```
 watch -n1 gpio readall
 watch -n1 "sqlite3 -header app.db 'select * from showers' "
-```
+````
+
+# Fonts
+sudo apt-get install fonts-noto

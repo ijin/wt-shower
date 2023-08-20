@@ -34,6 +34,7 @@ GPIO.setup(21, GPIO.OUT)
 SHOWER_PIN_MAP = { 1:19, 2:26}
 PAUSE_TIME_UNTIL_RESET = 60
 PAUSE_TIME_WARNING = PAUSE_TIME_UNTIL_RESET - 15
+SHOWER_TIME = 90 # seconds
 SINK_TIME = 600 # seconds
 SINK_STOP_BUFFER = 5 # seconds
 SINK_ID = 21
@@ -44,7 +45,8 @@ app.secret_key = 'random string'
 app.config.update(
     CELERY_BROKER_URL='redis://localhost:6379',
     CELERY_RESULT_BACKEND='redis://localhost:6379',
-
+    CELERY_RESULT_EXPIRES = 15,
+    CELERY_TASK_RESULT_EXPIRES = 15
 )
 
 celery = Celery(
@@ -52,6 +54,7 @@ celery = Celery(
     broker=app.config['CELERY_BROKER_URL'],
     backend=app.config['CELERY_RESULT_BACKEND'],
 )
+
 redis  = redis.Redis()
 
 phrase_count = Phrase.query.count()
@@ -137,6 +140,12 @@ def index():
 
 @app.route('/login', methods = ['POST', 'GET'])
 def login():
+    sink_ttl = running_sink_ttl()
+    if (sink_ttl > 0):
+        print(f"Sink RUNNING..")
+        logger.info(f"Sink RUUNING..")
+        #return render_template('sink_in_use.html', ttl=sink_ttl)
+
     if request.method == 'POST':
         name = request.form['name']
         password = request.form['password']
@@ -146,7 +155,7 @@ def login():
             session['id'] = u.id
             flash('You were successfully logged in')
             if u.chef:
-                return render_template('kitchen.html', name=u.name)
+                return render_template('kitchen.html', name=u.name, pi_name=u.pi_name)
             else:
                 return redirect(url_for('selection'))
         else:
@@ -157,6 +166,12 @@ def login():
 
 @app.route('/login_nfc', methods = ['POST', 'GET'])
 def login_nfc():
+    sink_ttl = running_sink_ttl()
+    if (sink_ttl > 0):
+        print(f"Sink RUNNING..")
+        logger.info(f"Sink RUUNING..")
+        #return render_template('sink_in_use.html', ttl=sink_ttl )
+
     if request.method == 'POST':
         nfc = request.form['nfc']
         print(f"{nfc}")
@@ -218,12 +233,13 @@ def instructions():
     else:
         log_event(user.id, credits)
         assign_shower(shower, user, credits)
-        seconds = int(credits)*90
+        seconds = int(credits)*SHOWER_TIME
         escort_user(user.pi_name, shower.id, seconds)
         return render_template('instructions.html', seconds=seconds, credits=user.credits, shower=shower.id)
 
 # TODO: OOP
 def available_shower():
+#    raise Exception("Debugging purpose") # Raising an exception to activate Flask's debugger
     showers = Shower.query.filter_by(assigned_to=None).all()
     count = len(showers)
     if count == 0:
@@ -235,7 +251,7 @@ def available_shower():
     
 # TODO: OOP
 def assign_shower(shower, user, credits):
-    seconds = int(credits)*90
+    seconds = int(credits)*SHOWER_TIME
     user.credits -= int(credits)
     shower.assigned_to = user.pi_name
     shower.seconds_allocated = seconds
@@ -387,14 +403,14 @@ def incr():
             print(f"Shower {shower_id}: [RUNNING] time left: {time_left}")
             logger.info(f"Shower {shower_id}: [RUNNING] time left: {time_left}")
 
-            if accumulated_shower_time == 20:
+            if 20 <= accumulated_shower_time < 21:
                 index = random.randint(0, phrase_count-1)
                 phrase = Phrase.query.get(index).phrase
                 print(f"Shower {shower_id}: [RUNNING] 20 seconds in. Saying something.")
                 logger.info(f"Shower {shower_id}: [RUNNING] 20 seconds in. Saying something.")
                 text = f"Hey, {s.assigned_to}, {phrase}"
                 say.delay(text)
-            if time_left == 30:
+            if 30 <= time_left < 31:
                 print(f"Shower {shower_id}: [RUNNING] 30 seconds left")
                 logger.info(f"Shower {shower_id}: [RUNNING] 30 seconds left")
                 text = f"Hey, {s.assigned_to}, 30 seconds left.."
@@ -404,7 +420,7 @@ def incr():
                 print(f"Shower {shower_id}: [TIME UP]")
                 logger.info(f"Shower {shower_id}: [TIME UP]")
                 shower_shutdown(shower_id)
-                say(text)
+                say.delay(text)
                 break
         # if showers are stopped
         elif (not v == None):
@@ -419,7 +435,7 @@ def incr():
                     print(f"Shower {shower_id}: [SHUTDOWN] {s.assigned_to} paused for too long")
                     logger.info(f"Shower {shower_id}: [SHUTDOWN] {s.assigned_to} paused for too long")
                     text = f"Hey {s.assigned_to}, Shower {shower_id} paused for too long...Shutting down"
-                    say(text)
+                    say.delay(text)
                     shower_shutdown(shower_id)
                     redis.set(f"shower{shower_id}_shutdown", 0)
                     raise Exception(f"Shower {shower_id}: [SHUTDOWN]......")
@@ -428,14 +444,14 @@ def incr():
                     logger.info(f"Shower {shower_id}: [PAUSED] warning for shutdown")
                     text = f"Shower {shower_id} paused for a while. Shutting down in 10 seconds"
                     say.delay(text)
-                    sleep(5)
+                    #sleep(5)
                 elif (elapsed_pause > 0):
                     print(f"Shower {shower_id}: [PAUSED] Elapsed time since last pause: {elapsed_pause}")
                     logger.info(f"Shower {shower_id}: [PAUSED] Elapsed time since last pause: {elapsed_pause}")
             # if assigned but paused
             else:
-                print("assigned but not paused")
-                logger.info("assigned but not paused")
+                print(f"Shower {shower_id}: assigned but not paused")
+                logger.info(f"Shower {shower_id}: assigned but not paused")
     #if running_sink():
     sink_ttl = running_sink_ttl()
     if (sink_ttl > 0 and sink_ttl <= SINK_STOP_BUFFER):

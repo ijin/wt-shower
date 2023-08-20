@@ -26,10 +26,10 @@ def main():
     try:
         GPIO.setmode(GPIO.BCM)
         #GPIO.setup(button, GPIO.IN)
-        GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-        #GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        #GPIO.add_event_detect(button, GPIO.FALLING, bouncetime=200)
-        GPIO.add_event_detect(button, GPIO.RISING, bouncetime=200)
+        #GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.add_event_detect(button, GPIO.FALLING, bouncetime=200)
+        #GPIO.add_event_detect(button, GPIO.RISING, bouncetime=200)
         GPIO.add_event_callback(button, button_pressed)
          
         while True:
@@ -38,8 +38,8 @@ def main():
             if status == 0:
                 if g_button:
                     status = 1
-                    print_message("button 1 pressed")
-                    toggle_shower(1)
+                    print_message(f"button {button} pressed")
+                    toggle_shower(num)
              
             elif status == 1:
                 loop += 1
@@ -78,11 +78,11 @@ def toggle_shower(pin):
 
 def button_pressed(gpio_no):
     global g_button
-    g_button = True
-#    time.sleep(0.02)
-#    #if not GPIO.input(gpio_no):
-#    if GPIO.input(gpio_no):
-#        g_button = True
+#    g_button = True
+    time.sleep(0.02)
+    if not GPIO.input(gpio_no):
+    #if GPIO.input(gpio_no):
+        g_button = True
  
 def print_message(message):
     now = datetime.datetime.now()

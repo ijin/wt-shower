@@ -6,7 +6,8 @@ import RPi.GPIO as GPIO
 import requests
  
 
-BUTTON_A = 5
+BUTTON_A = 22
+#BUTTON_A = 5
 BUTTON_B = 10
  
 g_button_a = False
@@ -28,12 +29,15 @@ def main():
          
         buttons = [
             [BUTTON_A, button_a_pressed],
-            [BUTTON_B, button_b_pressed],
+#            [BUTTON_B, button_b_pressed],
         ]
          
         for button in buttons:
-            GPIO.setup(button[0], GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(button[0], GPIO.FALLING, bouncetime=200)
+            #GPIO.setup(button[0], GPIO.IN)
+            GPIO.setup(button[0], GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+            #GPIO.setup(button[0], GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            #GPIO.add_event_detect(button[0], GPIO.FALLING, bouncetime=200)
+            GPIO.add_event_detect(button[0], GPIO.RISING, bouncetime=200)
             GPIO.add_event_callback(button[0], button[1])
          
         while True:
@@ -84,7 +88,10 @@ def toggle_shower(pin):
 def button_a_pressed(gpio_no):
     global g_button_a
     g_button_a = True
- 
+#    time.sleep(0.02)
+#    #if not GPIO.input(gpio_no):
+#    if GPIO.input(gpio_no):
+#        g_button_a = True
  
 def button_b_pressed(gpio_no):
     global g_button_b
