@@ -108,4 +108,4 @@ watch -n1 "sqlite3 -header app.db 'select * from showers' "
 ````
 
 # Fonts
-sudo apt-get install fonts-noto
+sudo apt-get install fonts-noto fonts-symbola
