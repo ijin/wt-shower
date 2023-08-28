@@ -218,6 +218,7 @@ def sink():
 @app.route('/selection', methods = ['GET'])
 def selection():
     u = User.query.get(session['id'])
+    say("User authentication complete")
     return render_template('selection.html', credits=u.credits, name=u.name, pi_name=u.pi_name)
 
 @app.route('/instructions', methods = ['POST', 'GET'])
